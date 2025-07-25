@@ -28,7 +28,7 @@
         {% for order in completed %}
           <li class="list-group-item d-flex justify-content-between align-items-center">
             <div>
-              <strong>{{ order.customer_name }}'s {{ order.drink }}</strong> ({{ order.size }}, {{ order.milk }}, {{ order.temperature }})
+              <strong>{{ order.customer_name }}'s {{ order.drink }}</strong> ({{ order.milk }}, {{ order.temperature }})
               {% if order.extra_shot %}
                 <br><small class="text-muted">+ Extra Shot</small>
               {% endif %}
