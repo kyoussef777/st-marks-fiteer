@@ -1,10 +1,12 @@
-from flask import Flask, g, render_template, request, redirect, url_for
+from flask import Flask, g, render_template, request, redirect, url_for, Response
 import sqlite3
+import csv
+from io import StringIO
 
 app = Flask(__name__)
-DATABASE = '/app/db.sqlite3'  # This should match your mounted volume
+DATABASE = '/app/db.sqlite3'  # Adjust this path as needed for your environment
 
-# ---------- Database helpers ----------
+# ---------- Database Helpers ----------
 
 def get_db():
     db = getattr(g, '_database', None)
@@ -29,7 +31,7 @@ def create_tables():
             size TEXT NOT NULL,
             milk TEXT NOT NULL,
             temperature TEXT NOT NULL,
-            extra_shot INTEGER NOT NULL,  -- store as 0 or 1
+            extra_shot INTEGER NOT NULL,
             notes TEXT,
             status TEXT NOT NULL,
             price REAL NOT NULL,
@@ -55,7 +57,7 @@ def order():
     milk = request.form.get('milk')
     temperature = request.form.get('temperature')
     notes = request.form.get('notes', '')
-    extra_shot = request.form.get('extra_shot') == 'true'  # checkbox returns 'true' if checked
+    extra_shot = request.form.get('extra_shot') == 'true'
 
     # Calculate price
     if drink == 'Latte':
@@ -94,7 +96,55 @@ def delete_order(order_id):
     db.commit()
     return redirect(url_for('index'))
 
-# ---------- Entry point ----------
+# ---------- Completed Orders Page ----------
+
+@app.route('/completed')
+def completed_orders():
+    db = get_db()
+    completed = db.execute('SELECT * FROM orders WHERE status = "completed" ORDER BY created_at DESC').fetchall()
+
+    total_drinks = len(completed)
+    total_lattes = len([o for o in completed if o['drink'] == 'Latte'])
+    total_coffees = len([o for o in completed if o['drink'] == 'Coffee'])
+    total_money = sum(o['price'] for o in completed)
+
+    return render_template(
+        'completed.html',
+        completed=completed,
+        total_drinks=total_drinks,
+        total_lattes=total_lattes,
+        total_coffees=total_coffees,
+        total_money=total_money
+    )
+
+# ---------- CSV Export ----------
+
+@app.route('/export_completed_csv')
+def export_completed_csv():
+    db = get_db()
+    completed = db.execute('SELECT * FROM orders WHERE status = "completed" ORDER BY created_at DESC').fetchall()
+
+    si = StringIO()
+    writer = csv.writer(si)
+    writer.writerow(['ID', 'Customer Name', 'Drink', 'Size', 'Milk', 'Temperature', 'Extra Shot', 'Notes', 'Price', 'Created At'])
+
+    for o in completed:
+        writer.writerow([
+            o['id'], o['customer_name'], o['drink'], o['size'], o['milk'],
+            o['temperature'], 'Yes' if o['extra_shot'] else 'No',
+            o['notes'], f"{o['price']:.2f}", o['created_at']
+        ])
+
+    output = si.getvalue()
+    si.close()
+
+    return Response(
+        output,
+        mimetype='text/csv',
+        headers={"Content-Disposition": "attachment; filename=completed_orders.csv"}
+    )
+
+# ---------- Entry Point ----------
 
 if __name__ == "__main__":
     create_tables()

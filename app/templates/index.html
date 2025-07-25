@@ -112,40 +112,7 @@
     {% endif %}
   </div>
 
-  <div class="completed-orders">
-    <h3>Completed Orders</h3>
-    {% set completed = orders | selectattr('status', 'equalto', 'completed') | list %}
-    {% if completed %}
-      <ul class="list-group">
-        {% for order in completed %}
-          <li class="list-group-item d-flex justify-content-between align-items-center">
-
-            <div>
-              <strong>{{ order.customer_name }}'s {{ order.drink }}</strong> ({{ order.size }}, {{ order.milk }}, {{ order.temperature }})
-              {% if order.extra_shot %}
-                <br><small class="text-muted">+ Extra Shot</small>
-              {% endif %}
-              {% if order.notes %}
-                <br><small class="text-muted">Note: {{ order.notes }}</small>
-              {% endif %}
-              <br><small class="fw-bold">Price: ${{ "%.2f"|format(order.price) }}</small>
-            </div>
-
-            <div class="d-flex gap-2">
-              <form action="{{ url_for('update_status', order_id=order.id, status='pending') }}" method="post" style="margin: 0;">
-                <button class="btn btn-warning btn-sm">Mark In Progress</button>
-              </form>
-              <form action="{{ url_for('delete_order', order_id=order.id) }}" method="post" style="margin: 0;">
-                <button class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this order?')">Delete</button>
-              </form>
-            </div>
-          </li>
-        {% endfor %}
-      </ul>
-    {% else %}
-      <p>No completed orders yet.</p>
-    {% endif %}
-  </div>
+  <a href="{{ url_for('completed_orders') }}" class="btn btn-outline-secondary mt-3">View Completed Orders</a>
 
   <div class="summary">
     <h4>Summary</h4>
