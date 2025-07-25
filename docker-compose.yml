@@ -7,5 +7,5 @@ services:
     ports:
       - "5000:5000"
     volumes:
-      - ./app/db.sqlite3:/app/db.sqlite3
+      - /opt/appdata/hebrews-pos/sqlite3:/app/db.sqlite3
     restart: unless-stopped
