@@ -24,6 +24,7 @@ def create_tables():
     db.execute("""
         CREATE TABLE IF NOT EXISTS orders (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
+            customer_name TEXT NOT NULL,
             drink TEXT NOT NULL,
             size TEXT NOT NULL,
             milk TEXT NOT NULL,
@@ -48,6 +49,7 @@ def index():
 
 @app.route('/order', methods=['POST'])
 def order():
+    customer_name = request.form['customer_name']
     drink = request.form['drink']
     size = request.form.get('size')
     milk = request.form.get('milk')
@@ -61,7 +63,7 @@ def order():
     elif drink == 'Coffee':
         price = 3.0
     else:
-        price = 0
+        price = 0.0
 
     if extra_shot:
         price += 1.0
@@ -70,10 +72,10 @@ def order():
     db.execute(
         '''
         INSERT INTO orders 
-        (drink, size, milk, temperature, extra_shot, notes, status, price, created_at) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime("now"))
+        (customer_name, drink, size, milk, temperature, extra_shot, notes, status, price, created_at) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime("now"))
         ''',
-        (drink, size, milk, temperature, int(extra_shot), notes, 'pending', price)
+        (customer_name, drink, size, milk, temperature, int(extra_shot), notes, 'pending', price)
     )
     db.commit()
     return redirect(url_for('index'))

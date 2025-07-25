@@ -2,7 +2,7 @@
 services:
   pos:
     # build: .
-    image: hebrew-pos:1.2.2
+    image: hebrew-pos:1.3
     ports:
       - "5000:5000"
     volumes:

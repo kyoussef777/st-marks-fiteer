@@ -17,6 +17,13 @@
       margin-top: 1.5rem;
       border-radius: 0.5rem;
     }
+    .summary {
+      margin-top: 2rem;
+      border: 2px solid #007bff;
+      padding: 1rem;
+      border-radius: 0.5rem;
+      background-color: #e9f5ff;
+    }
   </style>
 </head>
 <body class="p-4">
@@ -24,6 +31,11 @@
 
   <form action="{{ url_for('order') }}" method="post" class="mb-4">
     <div class="row g-2 align-items-end">
+
+      <div class="col-md-3">
+        <label for="customer_name" class="form-label">Customer Name</label>
+        <input type="text" name="customer_name" id="customer_name" class="form-control" placeholder="Enter your name" required>
+      </div>
 
       <div class="col-md-3">
         <label for="drink" class="form-label">Drink</label>
@@ -43,7 +55,7 @@
         </select>
       </div>
 
-      <div class="col-md-3">
+      <div class="col-md-2">
         <label for="milk" class="form-label">Milk</label>
         <select name="milk" id="milk" class="form-select" required>
           <option>Whole</option>
@@ -92,7 +104,7 @@
           <li class="list-group-item d-flex justify-content-between align-items-center">
 
             <div>
-              <strong>{{ order.drink }}</strong> ({{ order.size }}, {{ order.milk }}, {{ order.temperature }})
+              <strong>{{ order.customer_name }}'s {{ order.drink }}</strong> ({{ order.size }}, {{ order.milk }}, {{ order.temperature }})
               {% if order.extra_shot %}
                 <br><small class="text-muted">+ Extra Shot</small>
               {% endif %}
@@ -127,7 +139,7 @@
           <li class="list-group-item d-flex justify-content-between align-items-center">
 
             <div>
-              <strong>{{ order.drink }}</strong> ({{ order.size }}, {{ order.milk }}, {{ order.temperature }})
+              <strong>{{ order.customer_name }}'s {{ order.drink }}</strong> ({{ order.size }}, {{ order.milk }}, {{ order.temperature }})
               {% if order.extra_shot %}
                 <br><small class="text-muted">+ Extra Shot</small>
               {% endif %}
@@ -151,6 +163,20 @@
     {% else %}
       <p>No completed orders yet.</p>
     {% endif %}
+  </div>
+
+  <div class="summary">
+    <h4>Summary</h4>
+    {% set total_drinks = orders | length %}
+    {% set total_lattes = orders | selectattr('drink', 'equalto', 'Latte') | list | length %}
+    {% set total_coffees = orders | selectattr('drink', 'equalto', 'Coffee') | list | length %}
+    {% set total_money = orders | sum(attribute='price') %}
+    <ul>
+      <li><strong>Total Drinks Made:</strong> {{ total_drinks }}</li>
+      <li><strong>Total Lattes:</strong> {{ total_lattes }}</li>
+      <li><strong>Total Coffees:</strong> {{ total_coffees }}</li>
+      <li><strong>Total Money Made:</strong> ${{ "%.2f"|format(total_money) }}</li>
+    </ul>
   </div>
 </body>
 </html>
