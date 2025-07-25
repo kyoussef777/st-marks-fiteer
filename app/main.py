@@ -162,7 +162,7 @@ def create_label(order_id):
     c = canvas.Canvas(buffer, pagesize=(label_width, label_height))
 
     font_name = "Helvetica-Bold"
-    font_size = 12
+    font_size = 16
     c.setFont(font_name, font_size)
 
     # Lines of text to write
