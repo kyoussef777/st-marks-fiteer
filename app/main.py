@@ -157,23 +157,34 @@ def create_label(order_id):
         return "Order not found", 404
 
     buffer = io.BytesIO()
-    custom_size = (3 * inch, 3 * inch)
-    c = canvas.Canvas(buffer, pagesize=custom_size)
+    label_width = 3 * inch
+    label_height = 3 * inch
+    c = canvas.Canvas(buffer, pagesize=(label_width, label_height))
 
-    text = c.beginText(10, 200)
-    text.setFont("Helvetica", 12)
-    text.textLine(f"{order['customer_name']}'s {order['drink']}")
-    text.textLine(f"Size: {order['size']} | Milk: {order['milk']}")
-    text.textLine(f"Temperature: {order['temperature']}")
+    font_name = "Helvetica-Bold"
+    font_size = 12
+    c.setFont(font_name, font_size)
+
+    # Lines of text to write
+    lines = [
+        f"{order['customer_name']}'s {order['drink']}",
+        f"Size: {order['size']} | Milk: {order['milk']}",
+        f"Temp: {order['temperature']}"
+    ]
+
     if order['extra_shot']:
-        text.textLine("+ Extra Shot")
+        lines.append("+ Extra Shot")
     if order['notes']:
-        text.textLine(f"Note: {order['notes']}")
+        lines.append(f"Note: {order['notes']}")
 
-    c.drawText(text)
+    # Start from near the top and step down
+    y = label_height - 20
+    for line in lines:
+        c.drawCentredString(label_width / 2, y, line)
+        y -= font_size + 4  # spacing between lines
+
     c.showPage()
     c.save()
-
     buffer.seek(0)
 
     return send_file(
@@ -182,6 +193,7 @@ def create_label(order_id):
         mimetype='application/pdf',
         download_name=f'label_{order_id}.pdf'
     )
+
 
 # ---------- Entry Point ----------
 
