@@ -28,7 +28,6 @@ def create_tables():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             customer_name TEXT NOT NULL,
             drink TEXT NOT NULL,
-            size TEXT NOT NULL,
             milk TEXT NOT NULL,
             temperature TEXT NOT NULL,
             extra_shot INTEGER NOT NULL,
@@ -53,7 +52,6 @@ def index():
 def order():
     customer_name = request.form['customer_name']
     drink = request.form['drink']
-    size = request.form.get('size')
     milk = request.form.get('milk')
     temperature = request.form.get('temperature')
     notes = request.form.get('notes', '')
@@ -74,10 +72,10 @@ def order():
     db.execute(
         '''
         INSERT INTO orders 
-        (customer_name, drink, size, milk, temperature, extra_shot, notes, status, price, created_at) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime("now"))
+        (customer_name, drink, milk, temperature, extra_shot, notes, status, price, created_at) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime("now"))
         ''',
-        (customer_name, drink, size, milk, temperature, int(extra_shot), notes, 'pending', price)
+        (customer_name, drink, milk, temperature, int(extra_shot), notes, 'pending', price)
     )
     db.commit()
     return redirect(url_for('index'))
@@ -126,11 +124,11 @@ def export_completed_csv():
 
     si = StringIO()
     writer = csv.writer(si)
-    writer.writerow(['ID', 'Customer Name', 'Drink', 'Size', 'Milk', 'Temperature', 'Extra Shot', 'Notes', 'Price', 'Created At'])
+    writer.writerow(['ID', 'Customer Name', 'Drink', 'Milk', 'Temperature', 'Extra Shot', 'Notes', 'Price', 'Created At'])
 
     for o in completed:
         writer.writerow([
-            o['id'], o['customer_name'], o['drink'], o['size'], o['milk'],
+            o['id'], o['customer_name'], o['drink'], o['milk'],
             o['temperature'], 'Yes' if o['extra_shot'] else 'No',
             o['notes'], f"{o['price']:.2f}", o['created_at']
         ])
@@ -179,7 +177,7 @@ def create_label(order_id):
 
     lines = [
         f"{order['customer_name']}'s {order['drink']}",
-        f"Size: {order['size']} | Milk: {order['milk']}",
+        f"Milk: {order['milk']}",
         f"Temp: {order['temperature']}"
     ]
     if order['extra_shot']:

@@ -40,20 +40,10 @@
       </div>
 
       <div class="col-md-2">
-        <label for="size" class="form-label">Size</label>
-        <select name="size" id="size" class="form-select" required>
-          <option>Small</option>
-          <option>Medium</option>
-          <option>Large</option>
-        </select>
-      </div>
-
-      <div class="col-md-2">
         <label for="milk" class="form-label">Milk</label>
         <select name="milk" id="milk" class="form-select" required>
           <option>Whole</option>
           <option>Oat</option>
-          <option>Soy</option>
           <option>Almond</option>
           <option>None</option>
         </select>
@@ -97,7 +87,7 @@
           <li class="list-group-item d-flex justify-content-between align-items-center">
 
             <div>
-              <strong>{{ order.customer_name }}'s {{ order.drink }}</strong> ({{ order.size }}, {{ order.milk }}, {{ order.temperature }})
+              <strong>{{ order.customer_name }}'s {{ order.drink }}</strong> ({{ order.milk }}, {{ order.temperature }})
               {% if order.extra_shot %}
                 <br><small class="text-muted">+ Extra Shot</small>
               {% endif %}
