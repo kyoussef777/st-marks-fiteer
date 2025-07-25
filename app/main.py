@@ -177,7 +177,7 @@ def create_label(order_id):
 
     return send_file(
         buffer,
-        as_attachment=True,
+        as_attachment=False,
         mimetype='application/pdf',
         download_name=f'label_{order_id}.pdf'
     )
