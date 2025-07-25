@@ -2,7 +2,7 @@
 services:
   pos:
     container_name: hebrews-pos
-    image: hebrew-pos
+    image: hebrew-pos:1.8
     ports:
       - "5001:5000"
     volumes:
