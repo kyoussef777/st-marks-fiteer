@@ -183,7 +183,7 @@ def create_label(order_id):
         download_name=f'label_{order_id}.pdf'
     )
 
----------- Entry Point ----------
+# ---------- Entry Point ----------
 
 if __name__ == "__main__":
     create_tables()
