@@ -1,0 +1,26 @@
+/* styles.css */
+
+.pending-orders {
+    border: 2px solid green;
+    padding: 1rem;
+    margin-top: 1.5rem;
+    border-radius: 0.5rem;
+    background-color: #e6ffe6; /* light green background */
+}
+
+.pending-orders .list-group-item {
+    font-size: 1.2rem;
+    font-weight: 600;
+    padding: 1rem 1.5rem;
+    background-color: #ccffcc;
+    border-radius: 0.4rem;
+    margin-bottom: 0.5rem;
+    color: #005500;
+}
+
+.completed-orders {
+    border: 2px solid orange;
+    padding: 1rem;
+    margin-top: 1.5rem;
+    border-radius: 0.5rem;
+}
