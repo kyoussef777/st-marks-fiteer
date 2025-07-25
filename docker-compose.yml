@@ -4,7 +4,7 @@ services:
     # build: .
     image: hebrew-pos:1.6.4.2
     ports:
-      - "5000:5000"
+      - "5001:5000"
     volumes:
       - /opt/appdata/hebrews-pos/sqlite3/db.sqlite3:/app/db.sqlite3
     restart: unless-stopped
