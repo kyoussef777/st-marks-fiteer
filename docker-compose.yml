@@ -1,8 +1,8 @@
 ---
 services:
   pos:
-    # build: .
-    image: hebrew-pos:1.6.4.1
+    container_name: hebrews-pos
+    image: hebrew-pos:1.8
     ports:
       - "5000:5000"
     volumes:

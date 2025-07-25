@@ -144,7 +144,46 @@ def export_completed_csv():
         headers={"Content-Disposition": "attachment; filename=completed_orders.csv"}
     )
 
-# ---------- Entry Point ----------
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
+from flask import make_response
+import io
+
+@app.route('/create_label/<int:order_id>', methods=['POST'])
+def create_label(order_id):
+    db = get_db()
+    order = db.execute('SELECT * FROM orders WHERE id = ?', (order_id,)).fetchone()
+
+    if not order:
+        return "Order not found", 404
+
+    buffer = io.BytesIO()
+    c = canvas.Canvas(buffer, pagesize=letter)
+
+    text = c.beginText(40, 750)
+    text.setFont("Helvetica", 12)
+    text.textLine(f"{order['customer_name']}'s {order['drink']}")
+    text.textLine(f"Size: {order['size']} | Milk: {order['milk']}")
+    text.textLine(f"Temperature: {order['temperature']}")
+    if order['extra_shot']:
+        text.textLine("+ Extra Shot")
+    if order['notes']:
+        text.textLine(f"Note: {order['notes']}")
+
+    c.drawText(text)
+    c.showPage()
+    c.save()
+
+    buffer.seek(0)
+
+    return send_file(
+        buffer,
+        as_attachment=True,
+        mimetype='application/pdf',
+        download_name=f'label_{order_id}.pdf'
+    )
+
+---------- Entry Point ----------
 
 if __name__ == "__main__":
     create_tables()
