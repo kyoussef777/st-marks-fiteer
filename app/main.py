@@ -144,7 +144,7 @@ def export_completed_csv():
         headers={"Content-Disposition": "attachment; filename=completed_orders.csv"}
     )
 
-from reportlab.lib.pagesizes import letter
+from reportlab.lib.units import inch
 from reportlab.pdfgen import canvas
 import io
 
@@ -157,7 +157,8 @@ def create_label(order_id):
         return "Order not found", 404
 
     buffer = io.BytesIO()
-    c = canvas.Canvas(buffer, pagesize=letter)
+    custom_size = (2 * inch, 2 * inch)
+    c = canvas.Canvas(buffer, pagesize=custom_size)
 
     text = c.beginText(40, 750)
     text.setFont("Helvetica", 12)
