@@ -6,25 +6,29 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
   <style>
     .pending-orders {
-      border: 2px solid green;
-      padding: 1rem;
-      margin-top: 1.5rem;
-      border-radius: 0.5rem;
+        border: 2px solid green;
+        padding: 1rem;
+        margin-top: 1.5rem;
+        border-radius: 0.5rem;
+        background-color: #e6ffe6; /* light green background */
+    }
+    .pending-orders .list-group-item {
+        font-size: 1.2rem;          /* larger font */
+        font-weight: 600;           /* semi-bold */
+        padding: 1rem 1.5rem;       /* more padding */
+        background-color: #ccffcc;  /* slightly darker green for items */
+        border-radius: 0.4rem;
+        margin-bottom: 0.5rem;
+        color: #005500;             /* dark green text for good contrast */
     }
     .completed-orders {
-      border: 2px solid orange;
-      padding: 1rem;
-      margin-top: 1.5rem;
-      border-radius: 0.5rem;
-    }
-    .summary {
-      margin-top: 2rem;
-      border: 2px solid #007bff;
-      padding: 1rem;
-      border-radius: 0.5rem;
-      background-color: #e9f5ff;
+        border: 2px solid orange;
+        padding: 1rem;
+        margin-top: 1.5rem;
+        border-radius: 0.5rem;
     }
   </style>
+
 </head>
 <body class="p-4">
   <h1>HeBrews Coffee Cart</h1>
@@ -167,15 +171,16 @@
 
   <div class="summary">
     <h4>Summary</h4>
-    {% set total_drinks = orders | length %}
-    {% set total_lattes = orders | selectattr('drink', 'equalto', 'Latte') | list | length %}
-    {% set total_coffees = orders | selectattr('drink', 'equalto', 'Coffee') | list | length %}
-    {% set total_money = orders | sum(attribute='price') %}
+    {% set completed = orders | selectattr('status', 'equalto', 'completed') | list %}
+    {% set total_drinks = completed | length %}
+    {% set total_lattes = completed | selectattr('drink', 'equalto', 'Latte') | list | length %}
+    {% set total_coffees = completed | selectattr('drink', 'equalto', 'Coffee') | list | length %}
+    {% set total_money = completed | sum(attribute='price') %}
     <ul>
-      <li><strong>Total Drinks Made:</strong> {{ total_drinks }}</li>
-      <li><strong>Total Lattes:</strong> {{ total_lattes }}</li>
-      <li><strong>Total Coffees:</strong> {{ total_coffees }}</li>
-      <li><strong>Total Money Made:</strong> ${{ "%.2f"|format(total_money) }}</li>
+        <li><strong>Total Drinks Made:</strong> {{ total_drinks }}</li>
+        <li><strong>Total Lattes:</strong> {{ total_lattes }}</li>
+        <li><strong>Total Coffees:</strong> {{ total_coffees }}</li>
+        <li><strong>Total Money Made:</strong> ${{ "%.2f"|format(total_money) }}</li>
     </ul>
   </div>
 </body>
