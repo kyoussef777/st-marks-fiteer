@@ -148,6 +148,9 @@ from reportlab.lib.units import inch
 from reportlab.pdfgen import canvas
 import io
 
+from flask import current_app
+import os
+
 @app.route('/create_label/<int:order_id>', methods=['POST'])
 def create_label(order_id):
     db = get_db()
@@ -161,27 +164,31 @@ def create_label(order_id):
     label_height = 3 * inch
     c = canvas.Canvas(buffer, pagesize=(label_width, label_height))
 
-    font_name = "Helvetica-Bold"
-    font_size = 16
-    c.setFont(font_name, font_size)
+    # Optional: make the logo slightly transparent by drawing it first
+    logo_path = os.path.join(current_app.root_path, 'static', 'logo.png')
+    if os.path.exists(logo_path):
+        # Draw logo centered and faded behind text
+        logo_size = 1.5 * inch
+        logo_x = (label_width - logo_size) / 2
+        logo_y = (label_height - logo_size) / 2
+        c.drawImage(logo_path, logo_x, logo_y, width=logo_size, height=logo_size, preserveAspectRatio=True, mask='auto')
 
-    # Lines of text to write
+    # Set font and write centered text
+    c.setFont("Helvetica-Bold", 16)
     lines = [
         f"{order['customer_name']}'s {order['drink']}",
         f"Size: {order['size']} | Milk: {order['milk']}",
         f"Temp: {order['temperature']}"
     ]
-
     if order['extra_shot']:
         lines.append("+ Extra Shot")
     if order['notes']:
         lines.append(f"Note: {order['notes']}")
 
-    # Start from near the top and step down
     y = label_height - 20
     for line in lines:
         c.drawCentredString(label_width / 2, y, line)
-        y -= font_size + 4  # spacing between lines
+        y -= 16  # spacing
 
     c.showPage()
     c.save()
@@ -193,7 +200,6 @@ def create_label(order_id):
         mimetype='application/pdf',
         download_name=f'label_{order_id}.pdf'
     )
-
 
 # ---------- Entry Point ----------
 
