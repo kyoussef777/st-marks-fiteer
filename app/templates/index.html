@@ -114,19 +114,5 @@
 
   <a href="{{ url_for('completed_orders') }}" class="btn btn-outline-secondary mt-3">View Completed Orders</a>
 
-  <div class="summary">
-    <h4>Summary</h4>
-    {% set completed = orders | selectattr('status', 'equalto', 'completed') | list %}
-    {% set total_drinks = completed | length %}
-    {% set total_lattes = completed | selectattr('drink', 'equalto', 'Latte') | list | length %}
-    {% set total_coffees = completed | selectattr('drink', 'equalto', 'Coffee') | list | length %}
-    {% set total_money = completed | sum(attribute='price') %}
-    <ul>
-        <li><strong>Total Drinks Made:</strong> {{ total_drinks }}</li>
-        <li><strong>Total Lattes:</strong> {{ total_lattes }}</li>
-        <li><strong>Total Coffees:</strong> {{ total_coffees }}</li>
-        <li><strong>Total Money Made:</strong> ${{ "%.2f"|format(total_money) }}</li>
-    </ul>
-  </div>
 </body>
 </html>
