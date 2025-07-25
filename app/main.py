@@ -165,7 +165,7 @@ def create_label(order_id):
     c = canvas.Canvas(buffer, pagesize=(label_width, label_height))
 
     # Optional: make the logo slightly transparent by drawing it first
-    logo_path = os.path.join(current_app.root_path, 'static', 'logo.png')
+    logo_path = os.path.join(current_app.root_path, 'static', 'watermark.png')
     if os.path.exists(logo_path):
         # Draw logo centered and faded behind text
         logo_size = 1.5 * inch
