@@ -157,7 +157,7 @@ def create_label(order_id):
         return "Order not found", 404
 
     buffer = io.BytesIO()
-    custom_size = (2 * inch, 2 * inch)
+    custom_size = (3 * inch, 3 * inch)
     c = canvas.Canvas(buffer, pagesize=custom_size)
 
     text = c.beginText(40, 750)
