@@ -160,7 +160,7 @@ def create_label(order_id):
     custom_size = (3 * inch, 3 * inch)
     c = canvas.Canvas(buffer, pagesize=custom_size)
 
-    text = c.beginText(40, 750)
+    text = c.beginText(10, 200)
     text.setFont("Helvetica", 12)
     text.textLine(f"{order['customer_name']}'s {order['drink']}")
     text.textLine(f"Size: {order['size']} | Milk: {order['milk']}")
