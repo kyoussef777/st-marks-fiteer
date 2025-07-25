@@ -24,11 +24,14 @@ def create_tables():
     db.execute("""
         CREATE TABLE IF NOT EXISTS orders (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            item TEXT NOT NULL,
-            size TEXT,
-            milk TEXT,
+            drink TEXT NOT NULL,
+            size TEXT NOT NULL,
+            milk TEXT NOT NULL,
+            temperature TEXT NOT NULL,
+            extra_shot INTEGER NOT NULL,  -- store as 0 or 1
             notes TEXT,
             status TEXT NOT NULL,
+            price REAL NOT NULL,
             created_at TEXT NOT NULL
         )
     """)
@@ -45,15 +48,32 @@ def index():
 
 @app.route('/order', methods=['POST'])
 def order():
-    item = request.form['item']
+    drink = request.form['drink']
     size = request.form.get('size')
     milk = request.form.get('milk')
-    notes = request.form.get('notes')
+    temperature = request.form.get('temperature')
+    notes = request.form.get('notes', '')
+    extra_shot = request.form.get('extra_shot') == 'true'  # checkbox returns 'true' if checked
+
+    # Calculate price
+    if drink == 'Latte':
+        price = 4.0
+    elif drink == 'Coffee':
+        price = 3.0
+    else:
+        price = 0
+
+    if extra_shot:
+        price += 1.0
 
     db = get_db()
     db.execute(
-        'INSERT INTO orders (item, size, milk, notes, status, created_at) VALUES (?, ?, ?, ?, ?, datetime("now"))',
-        (item, size, milk, notes, 'pending')
+        '''
+        INSERT INTO orders 
+        (drink, size, milk, temperature, extra_shot, notes, status, price, created_at) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime("now"))
+        ''',
+        (drink, size, milk, temperature, int(extra_shot), notes, 'pending', price)
     )
     db.commit()
     return redirect(url_for('index'))
