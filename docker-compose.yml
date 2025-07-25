@@ -1,7 +1,7 @@
 ---
 services:
   pos:
-    # build: .
+    container_name: hebrews-pos
     image: hebrew-pos:1.7
     ports:
       - "5001:5000"
