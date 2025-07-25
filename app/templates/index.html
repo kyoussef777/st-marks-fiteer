@@ -9,6 +9,17 @@
 
 </head>
 <body class="p-4">
+  <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4 rounded">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="{{ url_for('index') }}">
+        <!-- Replace below text with an <img> tag if you have a logo image -->
+        <strong>HeBrews</strong>
+      </a>
+      <div class="d-flex">
+        <a href="{{ url_for('completed_orders') }}" class="btn btn-outline-warning">Completed Orders</a>
+      </div>
+    </div>
+  </nav>
   <h1>HeBrews Coffee Cart</h1>
 
   <form action="{{ url_for('order') }}" method="post" class="mb-4">
@@ -111,8 +122,5 @@
       <p>No orders in progress.</p>
     {% endif %}
   </div>
-
-  <a href="{{ url_for('completed_orders') }}" class="btn btn-outline-warning mt-3">View Completed Orders</a>
-
 </body>
 </html>

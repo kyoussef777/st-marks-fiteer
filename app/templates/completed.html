@@ -9,6 +9,17 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body class="p-4">
+  <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4 rounded">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="{{ url_for('index') }}">
+        <!-- Replace below text with an <img> tag if you have a logo image -->
+        <strong>HeBrews</strong>
+      </a>
+      <div class="d-flex">
+        <a href="{{ url_for('index') }}" class="btn btn-outline-warning">Cart</a>
+      </div>
+    </div>
+  </nav>
   <h1 class="mb-4">Completed Orders</h1>
 
   {% if completed %}
@@ -66,10 +77,7 @@
     <button type="submit" class="btn btn-outline-primary">Export to CSV</button>
   </form>
 
-  <div class="mt-3">
-    <a href="{{ url_for('index') }}" class="btn btn-secondary">Back to Home</a>
-  </div>
-  <script>
+<script>
     const ctx = document.getElementById('summaryChart').getContext('2d');
     const summaryChart = new Chart(ctx, {
         type: 'bar',
@@ -107,7 +115,5 @@
         }
     });
   </script>
-
-
 </body>
 </html>
