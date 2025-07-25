@@ -2,7 +2,8 @@ version: '3'
 
 services:
   pos:
-    build: .
+    # build: .
+    image: pos
     ports:
       - "5000:5000"
     volumes:
