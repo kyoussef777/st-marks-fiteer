@@ -164,17 +164,19 @@ def create_label(order_id):
     label_height = 3 * inch
     c = canvas.Canvas(buffer, pagesize=(label_width, label_height))
 
-    # Optional: make the logo slightly transparent by drawing it first
+    # Optional: draw logo as watermark
     logo_path = os.path.join(current_app.root_path, 'static', 'watermark.png')
     if os.path.exists(logo_path):
-        # Draw logo centered and faded behind text
         logo_size = 1.5 * inch
         logo_x = (label_width - logo_size) / 2
         logo_y = (label_height - logo_size) / 2
         c.drawImage(logo_path, logo_x, logo_y, width=logo_size, height=logo_size, preserveAspectRatio=True, mask='auto')
 
-    # Set font and write centered text
-    c.setFont("Helvetica-Bold", 16)
+    # Set font
+    font_name = "Helvetica-Bold"
+    font_size = 16
+    c.setFont(font_name, font_size)
+
     lines = [
         f"{order['customer_name']}'s {order['drink']}",
         f"Size: {order['size']} | Milk: {order['milk']}",
@@ -185,10 +187,16 @@ def create_label(order_id):
     if order['notes']:
         lines.append(f"Note: {order['notes']}")
 
-    y = label_height - 20
+    line_height = font_size + 2  # vertical spacing between lines
+    total_text_height = line_height * len(lines)
+
+    # Start y so block of text is vertically centered
+    y_start = (label_height + total_text_height) / 2 - line_height
+
+    y = y_start
     for line in lines:
         c.drawCentredString(label_width / 2, y, line)
-        y -= 16  # spacing
+        y -= line_height
 
     c.showPage()
     c.save()
