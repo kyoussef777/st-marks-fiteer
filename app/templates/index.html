@@ -80,40 +80,8 @@
 
   <div class="pending-orders">
     <h3>In Progress Orders</h3>
-    {% set in_progress = orders | selectattr('status', '!=', 'completed') | list %}
-    {% if in_progress %}
-      <ul class="list-group">
-        {% for order in in_progress %}
-          <li class="list-group-item d-flex justify-content-between align-items-center">
-
-            <div>
-              <strong>{{ order.customer_name }}'s {{ order.drink }}</strong> ({{ order.milk }}, {{ order.temperature }})
-              {% if order.extra_shot %}
-                <br><small class="text-muted">+ Extra Shot</small>
-              {% endif %}
-              {% if order.notes %}
-                <br><small class="text-muted">Note: {{ order.notes }}</small>
-              {% endif %}
-              <br><small class="fw-bold">Price: ${{ "%.2f"|format(order.price) }}</small>
-            </div>
-
-            <div class="d-flex gap-2">
-              <form action="{{ url_for('create_label', order_id=order.id) }}" method="post" target="_blank" style="margin: 0;">
-                <button class="btn btn-warning btn-sm">Create Label</button>
-              </form>
-              <form action="{{ url_for('update_status', order_id=order.id, status='completed') }}" method="post" style="margin: 0;">
-                <button class="btn btn-success btn-sm">Mark Completed</button>
-              </form>
-              <form action="{{ url_for('delete_order', order_id=order.id) }}" method="post" style="margin: 0;">
-                <button class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this order?')">Delete</button>
-              </form>
-            </div>
-          </li>
-        {% endfor %}
-      </ul>
-    {% else %}
-      <p>No orders in progress.</p>
-    {% endif %}
+    <!-- Orders will be loaded here by refresh.js -->
   </div>
+  <script src="{{ url_for('static', filename='js/refresh.js') }}"></script>
 </body>
 </html>

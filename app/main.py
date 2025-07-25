@@ -48,6 +48,16 @@ def index():
     orders = db.execute('SELECT * FROM orders ORDER BY created_at DESC').fetchall()
     return render_template('index.html', orders=orders)
 
+from flask import render_template_string
+
+@app.route('/in_progress')
+def in_progress_orders():
+    db = get_db()
+    orders = db.execute('SELECT * FROM orders ORDER BY created_at DESC').fetchall()
+    in_progress = [o for o in orders if o['status'] != 'completed']
+    return render_template('in_progress.html', orders=in_progress)
+
+
 @app.route('/order', methods=['POST'])
 def order():
     customer_name = request.form['customer_name']
