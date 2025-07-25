@@ -33,7 +33,7 @@
     <button class="btn btn-primary" type="submit">Place Order</button>
   </form>
 
-  <div class="completed-orders"></div>
+  <div class="pending-orders"></div>
     <h3>In Progress Orders</h3>
     {% set in_progress = orders | selectattr('status', '!=', 'completed') | list %}
     {% if in_progress %}
