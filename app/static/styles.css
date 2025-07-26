@@ -34,3 +34,73 @@
     border-radius: 0.5rem;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
+
+.table {
+    background: white;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.table th {
+    background: #f8f9fa;
+    border-top: none;
+}
+
+.table td {
+    vertical-align: middle;
+}
+
+.order-row {
+    transition: background-color 0.2s;
+}
+
+.order-row:hover {
+    background-color: #f8f9fa;
+}
+
+.order-row.pending {
+    background-color: #fff3cd;
+}
+
+.order-row.in_progress {
+    background-color: #cfe2ff;
+}
+
+.order-row.completed {
+    background-color: #d1e7dd;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.status-badge.pending {
+    background-color: #ffc107;
+    color: #000;
+}
+
+.status-badge.in_progress {
+    background-color: #0d6efd;
+    color: white;
+}
+
+.status-badge.completed {
+    background-color: #198754;
+    color: white;
+}
+
+.actions {
+    white-space: nowrap;
+}
+
+.actions .btn {
+    margin: 0 0.25rem;
+}
+
+.btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}

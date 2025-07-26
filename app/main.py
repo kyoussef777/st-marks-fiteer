@@ -1,4 +1,5 @@
 from flask import Flask, g, render_template, request, redirect, url_for, Response, make_response, send_file, session, flash
+from flask_wtf.csrf import CSRFProtect, generate_csrf
 import sqlite3
 import csv
 from io import StringIO
@@ -26,6 +27,9 @@ users = {
     username: generate_password_hash(password)
 }
 
+# Initialize CSRF protection
+csrf = CSRFProtect(app)
+
 # ---------- Login Helpers ----------
 def login_required(f):
     @wraps(f)
@@ -34,6 +38,12 @@ def login_required(f):
             return redirect(url_for('login'))
         return f(*args, **kwargs)
     return decorated_function
+
+@app.after_request
+def add_csrf_header(response):
+    if 'text/html' in response.headers.get('Content-Type', ''):
+        response.set_cookie('csrf_token', generate_csrf())
+    return response
 
 # ---------- Database Helpers ----------
 def get_db():
@@ -131,21 +141,42 @@ def order():
     db.commit()
     return redirect(url_for('index'))
 
-@app.route('/update_status/<int:order_id>/<status>', methods=['POST'])
+@app.route('/orders')
 @login_required
-def update_status(order_id, status):
+def orders():
     db = get_db()
-    db.execute('UPDATE orders SET status = ? WHERE id = ?', (status, order_id))
-    db.commit()
-    return redirect(url_for('index'))
+    orders = db.execute('''
+        SELECT * FROM orders 
+        WHERE status IN ("pending", "in_progress", "completed") 
+        ORDER BY 
+            CASE status
+                WHEN "pending" THEN 1
+                WHEN "in_progress" THEN 2
+                WHEN "completed" THEN 3
+            END,
+            created_at DESC
+    ''').fetchall()
+    return render_template('orders.html', orders=orders)
 
 @app.route('/delete_order/<int:order_id>', methods=['POST'])
 @login_required
 def delete_order(order_id):
     db = get_db()
-    db.execute('DELETE FROM orders WHERE id = ?', (order_id,))
+    db.execute('DELETE FROM orders WHERE id = ?', [order_id])
     db.commit()
-    return redirect(request.referrer or url_for('default_route'))
+    return 'OK'
+
+@app.route('/update_status/<int:order_id>', methods=['POST'])
+@login_required
+def update_status(order_id):
+    new_status = request.form.get('status')
+    if new_status not in ['pending', 'in_progress', 'completed']:
+        return 'Invalid status', 400
+        
+    db = get_db()
+    db.execute('UPDATE orders SET status = ? WHERE id = ?', [new_status, order_id])
+    db.commit()
+    return 'OK'
 
 @app.route('/completed')
 @login_required
@@ -193,7 +224,7 @@ def export_completed_csv():
         headers={"Content-Disposition": "attachment; filename=completed_orders.csv"}
     )
 
-@app.route('/create_label/<int:order_id>', methods=['POST'])
+@app.route('/create_label/<int:order_id>')
 @login_required
 def create_label(order_id):
     db = get_db()

@@ -12,6 +12,7 @@
 <h1 class="mb-4">HeBrews Coffee Cart</h1>
 
 <form action="{{ url_for('order') }}" method="post" class="mb-4">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   <div class="row g-2 align-items-end">
 
     <div class="col-md-3">
