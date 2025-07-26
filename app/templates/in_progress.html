@@ -1,3 +1,10 @@
+{% extends "base.html" %}
+
+{% block title %}In Progress Orders - Hebrews Coffee{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">In Progress Orders</h2>
+
 {% if orders %}
   <ul class="list-group">
     {% for order in orders %}
@@ -31,3 +38,4 @@
 {% else %}
   <p>No orders in progress.</p>
 {% endif %}
+{% endblock %}

@@ -3,6 +3,12 @@
 {% block title %}Completed Orders - Hebrews Coffee{% endblock %}
 
 {% block content %}
+<div class="d-flex justify-content-end mb-3">
+  <a href="{{ url_for('index') }}" class="btn btn-outline-primary btn-sm">
+    ☕ Back to Cart
+  </a>
+</div>
+
 <h1 class="mb-4">Completed Orders</h1>
 
 {% if completed %}

@@ -3,6 +3,12 @@
 {% block title %}HeBrews Coffee Cart{% endblock %}
 
 {% block content %}
+<div class="d-flex justify-content-end mb-3">
+  <a href="{{ url_for('completed_orders') }}" class="btn btn-outline-success btn-sm">
+    ✔️ View Completed Orders
+  </a>
+</div>
+
 <h1 class="mb-4">HeBrews Coffee Cart</h1>
 
 <form action="{{ url_for('order') }}" method="post" class="mb-4">
