@@ -137,7 +137,7 @@ def delete_order(order_id):
     db = get_db()
     db.execute('DELETE FROM orders WHERE id = ?', (order_id,))
     db.commit()
-    return redirect(url_for('index'))
+    return redirect(request.referrer or url_for('default_route'))
 
 @app.route('/completed')
 @login_required
