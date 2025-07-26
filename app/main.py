@@ -8,14 +8,21 @@ from functools import wraps
 from werkzeug.security import generate_password_hash, check_password_hash
 from reportlab.lib.units import inch
 from reportlab.pdfgen import canvas
+from dotenv import load_dotenv
 
 app = Flask(__name__)
-app.secret_key = 'your-secret-key'  # Replace with a secure random key!
+
+load_dotenv()
+app.secret_key = os.getenv('FLASK_SECRET_KEY')
+
 DATABASE = '/app/db.sqlite3'  # Adjust this path as needed
 
 # ---------- Hardcoded Users (for demonstration) ----------
+username = os.getenv('APP_USERNAME', 'admin')  # default to 'admin' if not set
+password = os.getenv('APP_PASSWORD', 'password123')  # default password
+
 users = {
-    "admin": generate_password_hash("password123")
+    username: generate_password_hash(password)
 }
 
 # ---------- Login Helpers ----------
