@@ -13,6 +13,7 @@ from dotenv import load_dotenv
 app = Flask(__name__)
 
 load_dotenv()
+
 app.secret_key = os.getenv('FLASK_SECRET_KEY')
 
 DATABASE = '/app/db.sqlite3'  # Adjust this path as needed

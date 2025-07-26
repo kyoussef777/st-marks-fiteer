@@ -8,3 +8,7 @@ services:
     volumes:
       - /opt/appdata/hebrews-pos/sqlite3/db.sqlite3:/app/db.sqlite3
     restart: unless-stopped
+    environment:
+      - FLASK_SECRET_KEY
+      - APP_USERNAME
+      - APP_PASSWORD
