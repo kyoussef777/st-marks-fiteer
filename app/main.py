@@ -1,13 +1,33 @@
-from flask import Flask, g, render_template, request, redirect, url_for, Response, make_response, send_file
+from flask import Flask, g, render_template, request, redirect, url_for, Response, make_response, send_file, session, flash
 import sqlite3
 import csv
 from io import StringIO
+import os
+import io
+from functools import wraps
+from werkzeug.security import generate_password_hash, check_password_hash
+from reportlab.lib.units import inch
+from reportlab.pdfgen import canvas
 
 app = Flask(__name__)
-DATABASE = '/app/db.sqlite3'  # Adjust this path as needed for your environment
+app.secret_key = 'your-secret-key'  # Replace with a secure random key!
+DATABASE = '/app/db.sqlite3'  # Adjust this path as needed
+
+# ---------- Hardcoded Users (for demonstration) ----------
+users = {
+    "admin": generate_password_hash("password123")
+}
+
+# ---------- Login Helpers ----------
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user' not in session:
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
 
 # ---------- Database Helpers ----------
-
 def get_db():
     db = getattr(g, '_database', None)
     if db is None:
@@ -40,25 +60,45 @@ def create_tables():
     db.commit()
     db.close()
 
-# ---------- Routes ----------
+# ---------- Auth Routes ----------
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        user_password_hash = users.get(username)
 
+        if user_password_hash and check_password_hash(user_password_hash, password):
+            session['user'] = username
+            return redirect(url_for('index'))
+        else:
+            flash("Invalid credentials")
+            return render_template('login.html')
+    return render_template('login.html')
+
+@app.route('/logout')
+def logout():
+    session.pop('user', None)
+    return redirect(url_for('login'))
+
+# ---------- Routes ----------
 @app.route('/')
+@login_required
 def index():
     db = get_db()
     orders = db.execute('SELECT * FROM orders ORDER BY created_at DESC').fetchall()
     return render_template('index.html', orders=orders)
 
-from flask import render_template_string
-
 @app.route('/in_progress')
+@login_required
 def in_progress_orders():
     db = get_db()
     orders = db.execute('SELECT * FROM orders ORDER BY created_at DESC').fetchall()
     in_progress = [o for o in orders if o['status'] != 'completed']
     return render_template('in_progress.html', orders=in_progress)
 
-
 @app.route('/order', methods=['POST'])
+@login_required
 def order():
     customer_name = request.form['customer_name']
     drink = request.form['drink']
@@ -67,14 +107,7 @@ def order():
     notes = request.form.get('notes', '')
     extra_shot = request.form.get('extra_shot') == 'true'
 
-    # Calculate price
-    if drink == 'Latte':
-        price = 4.0
-    elif drink == 'Coffee':
-        price = 3.0
-    else:
-        price = 0.0
-
+    price = 4.0 if drink == 'Latte' else 3.0 if drink == 'Coffee' else 0.0
     if extra_shot:
         price += 1.0
 
@@ -91,6 +124,7 @@ def order():
     return redirect(url_for('index'))
 
 @app.route('/update_status/<int:order_id>/<status>', methods=['POST'])
+@login_required
 def update_status(order_id, status):
     db = get_db()
     db.execute('UPDATE orders SET status = ? WHERE id = ?', (status, order_id))
@@ -98,15 +132,15 @@ def update_status(order_id, status):
     return redirect(url_for('index'))
 
 @app.route('/delete_order/<int:order_id>', methods=['POST'])
+@login_required
 def delete_order(order_id):
     db = get_db()
     db.execute('DELETE FROM orders WHERE id = ?', (order_id,))
     db.commit()
     return redirect(url_for('index'))
 
-# ---------- Completed Orders Page ----------
-
 @app.route('/completed')
+@login_required
 def completed_orders():
     db = get_db()
     completed = db.execute('SELECT * FROM orders WHERE status = "completed" ORDER BY created_at DESC').fetchall()
@@ -125,9 +159,8 @@ def completed_orders():
         total_money=total_money
     )
 
-# ---------- CSV Export ----------
-
 @app.route('/export_completed_csv')
+@login_required
 def export_completed_csv():
     db = get_db()
     completed = db.execute('SELECT * FROM orders WHERE status = "completed" ORDER BY created_at DESC').fetchall()
@@ -152,14 +185,8 @@ def export_completed_csv():
         headers={"Content-Disposition": "attachment; filename=completed_orders.csv"}
     )
 
-from reportlab.lib.units import inch
-from reportlab.pdfgen import canvas
-import io
-
-from flask import current_app
-import os
-
 @app.route('/create_label/<int:order_id>', methods=['POST'])
+@login_required
 def create_label(order_id):
     db = get_db()
     order = db.execute('SELECT * FROM orders WHERE id = ?', (order_id,)).fetchone()
@@ -172,15 +199,13 @@ def create_label(order_id):
     label_height = 3 * inch
     c = canvas.Canvas(buffer, pagesize=(label_width, label_height))
 
-    # Optional: draw logo as watermark
-    logo_path = os.path.join(current_app.root_path, 'static', 'watermark.png')
+    logo_path = os.path.join(app.root_path, 'static', 'watermark.png')
     if os.path.exists(logo_path):
         logo_size = 1.5 * inch
         logo_x = (label_width - logo_size) / 2
         logo_y = (label_height - logo_size) / 2
         c.drawImage(logo_path, logo_x, logo_y, width=logo_size, height=logo_size, preserveAspectRatio=True, mask='auto')
 
-    # Set font
     font_name = "Helvetica-Bold"
     font_size = 16
     c.setFont(font_name, font_size)
@@ -195,10 +220,8 @@ def create_label(order_id):
     if order['notes']:
         lines.append(f"Note: {order['notes']}")
 
-    line_height = font_size + 2  # vertical spacing between lines
+    line_height = font_size + 2
     total_text_height = line_height * len(lines)
-
-    # Start y so block of text is vertically centered
     y_start = (label_height + total_text_height) / 2 - line_height
 
     y = y_start
@@ -218,7 +241,6 @@ def create_label(order_id):
     )
 
 # ---------- Entry Point ----------
-
 if __name__ == "__main__":
     create_tables()
     app.run(host='0.0.0.0', port=5000)
