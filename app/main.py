@@ -264,7 +264,7 @@ def delete_order(order_id):
     db = get_db()
     db.execute('DELETE FROM orders WHERE id = ?', [order_id])
     db.commit()
-    return 'OK'
+    return redirect(request.referrer or url_for('default_route'))
 
 @app.route('/update_status/<int:order_id>', methods=['POST'])
 @login_required
@@ -276,7 +276,7 @@ def update_status(order_id):
     db = get_db()
     db.execute('UPDATE orders SET status = ? WHERE id = ?', [new_status, order_id])
     db.commit()
-    return 'OK'
+    return redirect(request.referrer or url_for('default_route'))
 
 @app.route('/completed')
 @login_required
@@ -469,7 +469,7 @@ def update_menu_item(item_id):
                   (item_name, item_id))
     
     db.commit()
-    return 'OK'
+    return redirect(request.referrer or url_for('default_route'))
 
 @app.route('/add_menu_item', methods=['POST'])
 @login_required
@@ -501,7 +501,7 @@ def add_menu_item():
         )
     
     db.commit()
-    return 'OK'
+    return redirect(request.referrer or url_for('default_route'))
 
 @app.route('/delete_menu_item/<int:item_id>', methods=['POST'])
 @login_required
@@ -509,7 +509,7 @@ def delete_menu_item(item_id):
     db = get_db()
     db.execute('DELETE FROM menu_config WHERE id = ?', (item_id,))
     db.commit()
-    return 'OK'
+    return redirect(request.referrer or url_for('default_route'))
 
 # ---------- API Routes ----------
 @app.route('/api/order-count')
