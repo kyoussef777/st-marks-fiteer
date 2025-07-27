@@ -1,4 +1,4 @@
-# Hebrews Coffee POS System
+# HeBrews Coffee POS System
 
 A modern point-of-sale (POS) system built specifically for coffee shops, featuring order management, customer tracking, analytics, and label printing capabilities.
 
