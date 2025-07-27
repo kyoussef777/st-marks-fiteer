@@ -5,6 +5,7 @@
 
 # Database files
 *.sqlite3
+*db.sqlite3
 *.db
 app/db.sqlite3
 app/data/
@@ -43,3 +44,13 @@ Thumbs.db
 # Backup files
 backup-*.tar.gz
 *.backup
+
+# Storybook files
+.storybook/
+storybook-static/
+*.stories.js
+*.stories.ts
+*.stories.jsx
+*.stories.tsx
+sb-*
+chromatic-*

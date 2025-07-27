@@ -67,6 +67,8 @@ def create_tables():
             customer_name TEXT NOT NULL,
             drink TEXT NOT NULL,
             milk TEXT NOT NULL,
+            syrup TEXT,
+            foam TEXT,
             temperature TEXT NOT NULL,
             extra_shot INTEGER NOT NULL,
             notes TEXT,
@@ -75,6 +77,17 @@ def create_tables():
             created_at TEXT NOT NULL
         )
     """)
+    
+    # Add syrup and foam columns if they don't exist (for existing databases)
+    try:
+        db.execute("ALTER TABLE orders ADD COLUMN syrup TEXT")
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+    
+    try:
+        db.execute("ALTER TABLE orders ADD COLUMN foam TEXT")
+    except sqlite3.OperationalError:
+        pass  # Column already exists
     
     # Create menu configuration table
     db.execute("""
@@ -96,7 +109,14 @@ def create_tables():
             ('milk', 'Whole', None),
             ('milk', 'Oat', None),
             ('milk', 'Almond', None),
-            ('milk', 'None', None)
+            ('milk', 'None', None),
+            ('syrup', 'Vanilla', None),
+            ('syrup', 'Caramel', None),
+            ('syrup', 'Hazelnut', None),
+            ('syrup', 'None', None),
+            ('foam', 'Regular', None),
+            ('foam', 'Extra Foam', None),
+            ('foam', 'No Foam', None)
         ]
         for item_type, item_name, price in default_items:
             db.execute(
@@ -136,7 +156,9 @@ def index():
     orders = db.execute('SELECT * FROM orders ORDER BY created_at DESC').fetchall()
     drinks = db.execute('SELECT * FROM menu_config WHERE item_type = "drink" ORDER BY item_name').fetchall()
     milks = db.execute('SELECT * FROM menu_config WHERE item_type = "milk" ORDER BY item_name').fetchall()
-    return render_template('index.html', orders=orders, drinks=drinks, milks=milks)
+    syrups = db.execute('SELECT * FROM menu_config WHERE item_type = "syrup" ORDER BY item_name').fetchall()
+    foams = db.execute('SELECT * FROM menu_config WHERE item_type = "foam" ORDER BY item_name').fetchall()
+    return render_template('index.html', orders=orders, drinks=drinks, milks=milks, syrups=syrups, foams=foams)
 
 @app.route('/in_progress')
 @login_required
@@ -152,6 +174,8 @@ def order():
     customer_name = request.form['customer_name']
     drink = request.form['drink']
     milk = request.form.get('milk')
+    syrup = request.form.get('syrup')
+    foam = request.form.get('foam')
     temperature = request.form.get('temperature')
     notes = request.form.get('notes', '')
     extra_shot = request.form.get('extra_shot') == 'true'
@@ -171,10 +195,10 @@ def order():
     db.execute(
         '''
         INSERT INTO orders 
-        (customer_name, drink, milk, temperature, extra_shot, notes, status, price, created_at) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime("now"))
+        (customer_name, drink, milk, syrup, foam, temperature, extra_shot, notes, status, price, created_at) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime("now"))
         ''',
-        (customer_name, drink, milk, temperature, int(extra_shot), notes, 'pending', price)
+        (customer_name, drink, milk, syrup, foam, temperature, int(extra_shot), notes, 'pending', price)
     )
     db.commit()
     return redirect(url_for('index'))
@@ -183,9 +207,31 @@ def order():
 @login_required
 def orders():
     db = get_db()
-    orders = db.execute('''
-        SELECT * FROM orders 
-        WHERE status IN ("pending", "in_progress", "completed") 
+    search = request.args.get('search', '')
+    status_filter = request.args.get('status', 'all')
+    
+    query = '''
+        SELECT *, 
+               CASE 
+                   WHEN status = 'pending' THEN (julianday('now') - julianday(created_at)) * 24 * 60
+                   WHEN status = 'in_progress' THEN (julianday('now') - julianday(created_at)) * 24 * 60
+                   ELSE 0
+               END as wait_time_minutes
+        FROM orders 
+        WHERE 1=1
+    '''
+    params = []
+    
+    if search:
+        query += ' AND (customer_name LIKE ? OR drink LIKE ? OR notes LIKE ?)'
+        search_param = f'%{search}%'
+        params.extend([search_param, search_param, search_param])
+    
+    if status_filter != 'all':
+        query += ' AND status = ?'
+        params.append(status_filter)
+    
+    query += '''
         ORDER BY 
             CASE status
                 WHEN "pending" THEN 1
@@ -193,8 +239,10 @@ def orders():
                 WHEN "completed" THEN 3
             END,
             created_at DESC
-    ''').fetchall()
-    return render_template('orders.html', orders=orders)
+    '''
+    
+    orders = db.execute(query, params).fetchall()
+    return render_template('orders.html', orders=orders, search=search, status_filter=status_filter)
 
 @app.route('/delete_order/<int:order_id>', methods=['POST'])
 @login_required
@@ -227,9 +275,53 @@ def completed_orders():
     
     # Calculate drink counts dynamically
     drink_counts = {}
+    milk_counts = {}
+    syrup_counts = {}
+    foam_counts = {}
+    temperature_counts = {}
+    customer_counts = {}
+    
+    total_extra_shots = 0
+    
     for order in completed:
+        # Drink counts
         drink_name = order['drink']
         drink_counts[drink_name] = drink_counts.get(drink_name, 0) + 1
+        
+        # Milk counts
+        milk_type = order['milk'] or 'None'
+        milk_counts[milk_type] = milk_counts.get(milk_type, 0) + 1
+        
+        # Syrup counts
+        syrup_type = order['syrup'] or 'None'
+        syrup_counts[syrup_type] = syrup_counts.get(syrup_type, 0) + 1
+        
+        # Foam counts
+        foam_type = order['foam'] or 'Regular'
+        foam_counts[foam_type] = foam_counts.get(foam_type, 0) + 1
+        
+        # Temperature counts
+        temp = order['temperature']
+        temperature_counts[temp] = temperature_counts.get(temp, 0) + 1
+        
+        # Customer counts
+        customer = order['customer_name']
+        customer_counts[customer] = customer_counts.get(customer, 0) + 1
+        
+        # Extra shots
+        if order['extra_shot']:
+            total_extra_shots += 1
+    
+    # Calculate averages and insights
+    avg_order_value = total_money / total_drinks if total_drinks > 0 else 0
+    
+    # Most popular items
+    most_popular_drink = max(drink_counts.items(), key=lambda x: x[1]) if drink_counts else ('None', 0)
+    most_popular_milk = max(milk_counts.items(), key=lambda x: x[1]) if milk_counts else ('None', 0)
+    most_popular_syrup = max(syrup_counts.items(), key=lambda x: x[1]) if syrup_counts else ('None', 0)
+    
+    # Top customers
+    top_customers = sorted(customer_counts.items(), key=lambda x: x[1], reverse=True)[:5]
     
     # For backward compatibility, still provide total_lattes and total_coffees
     total_lattes = drink_counts.get('Latte', 0)
@@ -242,7 +334,18 @@ def completed_orders():
         total_lattes=total_lattes,
         total_coffees=total_coffees,
         total_money=total_money,
-        drink_counts=drink_counts
+        drink_counts=drink_counts,
+        milk_counts=milk_counts,
+        syrup_counts=syrup_counts,
+        foam_counts=foam_counts,
+        temperature_counts=temperature_counts,
+        customer_counts=customer_counts,
+        total_extra_shots=total_extra_shots,
+        avg_order_value=avg_order_value,
+        most_popular_drink=most_popular_drink,
+        most_popular_milk=most_popular_milk,
+        most_popular_syrup=most_popular_syrup,
+        top_customers=top_customers
     )
 
 @app.route('/export_completed_csv')
@@ -253,12 +356,13 @@ def export_completed_csv():
 
     si = StringIO()
     writer = csv.writer(si)
-    writer.writerow(['ID', 'Customer Name', 'Drink', 'Milk', 'Temperature', 'Extra Shot', 'Notes', 'Price', 'Created At'])
+    writer.writerow(['ID', 'Customer Name', 'Drink', 'Milk', 'Syrup', 'Foam', 'Temperature', 'Extra Shot', 'Notes', 'Price', 'Created At'])
 
     for o in completed:
         writer.writerow([
             o['id'], o['customer_name'], o['drink'], o['milk'],
-            o['temperature'], 'Yes' if o['extra_shot'] else 'No',
+            o['syrup'] or '', o['foam'] or '', o['temperature'], 
+            'Yes' if o['extra_shot'] else 'No',
             o['notes'], f"{o['price']:.2f}", o['created_at']
         ])
 
@@ -299,6 +403,8 @@ def create_label(order_id):
     lines = [
         f"{order['customer_name']}'s {order['drink']}",
         f"Milk: {order['milk']}",
+        f"Syrup: {order['syrup'] or 'None'}",
+        f"Foam: {order['foam'] or 'Regular'}",
         f"Temp: {order['temperature']}"
     ]
     if order['extra_shot']:
@@ -361,7 +467,7 @@ def add_menu_item():
     if not item_type or not item_name:
         return 'Item type and name are required', 400
     
-    if item_type not in ['drink', 'milk']:
+    if item_type not in ['drink', 'milk', 'syrup', 'foam']:
         return 'Invalid item type', 400
     
     db = get_db()
@@ -390,6 +496,49 @@ def delete_menu_item(item_id):
     db.execute('DELETE FROM menu_config WHERE id = ?', (item_id,))
     db.commit()
     return 'OK'
+
+# ---------- API Routes ----------
+@app.route('/api/order-count')
+@login_required
+def api_order_count():
+    db = get_db()
+    pending = db.execute('SELECT COUNT(*) FROM orders WHERE status = "pending"').fetchone()[0]
+    in_progress = db.execute('SELECT COUNT(*) FROM orders WHERE status = "in_progress"').fetchone()[0]
+    completed = db.execute('SELECT COUNT(*) FROM orders WHERE status = "completed"').fetchone()[0]
+    
+    return {
+        'pending': pending,
+        'in_progress': in_progress,
+        'completed': completed,
+        'total': pending + in_progress + completed
+    }
+
+@app.route('/api/customers')
+@login_required
+def api_customers():
+    db = get_db()
+    customers = db.execute(
+        'SELECT DISTINCT customer_name FROM orders ORDER BY customer_name'
+    ).fetchall()
+    
+    return {
+        'customers': [row['customer_name'] for row in customers]
+    }
+
+@app.route('/api/customer-history/<customer_name>')
+@login_required
+def api_customer_history(customer_name):
+    db = get_db()
+    orders = db.execute(
+        'SELECT * FROM orders WHERE customer_name LIKE ? ORDER BY created_at DESC LIMIT 10',
+        (f'%{customer_name}%',)
+    ).fetchall()
+    
+    return {
+        'orders': [dict(order) for order in orders],
+        'total_orders': len(orders),
+        'favorite_drink': None  # Could be calculated from order history
+    }
 
 # ---------- Entry Point ----------
 if __name__ == "__main__":

@@ -2,6 +2,30 @@
 
 {% block content %}
 <div class="container-fluid mt-3">
+    <!-- Search and Filter Controls -->
+    <div class="row mb-3">
+        <div class="col-12 col-md-6 mb-2 mb-md-0">
+            <form method="GET" class="d-flex">
+                <input type="text" name="search" class="form-control me-2" placeholder="Search orders..." value="{{ search }}">
+                <button type="submit" class="btn btn-outline-primary btn-sm">
+                    <span class="d-none d-sm-inline">Search</span>
+                    <span class="d-sm-none">🔍</span>
+                </button>
+            </form>
+        </div>
+        <div class="col-12 col-md-6">
+            <form method="GET" class="d-flex">
+                <input type="hidden" name="search" value="{{ search }}">
+                <select name="status" class="form-select me-2" onchange="this.form.submit()">
+                    <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All Orders</option>
+                    <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending</option>
+                    <option value="in_progress" {% if status_filter == 'in_progress' %}selected{% endif %}>In Progress</option>
+                    <option value="completed" {% if status_filter == 'completed' %}selected{% endif %}>Completed</option>
+                </select>
+            </form>
+        </div>
+    </div>
+    
     <div class="table-responsive">
         <table class="table table-hover">
             <thead>
@@ -10,8 +34,11 @@
                     <th>Customer</th>
                     <th>Drink</th>
                     <th>Milk</th>
+                    <th>Syrup</th>
+                    <th>Foam</th>
                     <th>Temp</th>
                     <th>Extra Shot</th>
+                    <th>Wait Time</th>
                     <th>Notes</th>
                     <th>Status</th>
                     <th>Actions</th>
@@ -24,8 +51,19 @@
                     <td>{{ order.customer_name }}</td>
                     <td>{{ order.drink }}</td>
                     <td>{{ order.milk }}</td>
+                    <td>{{ order.syrup or '' }}</td>
+                    <td>{{ order.foam or '' }}</td>
                     <td>{{ order.temperature }}</td>
                     <td>{{ 'Yes' if order.extra_shot else 'No' }}</td>
+                    <td>
+                        {% if order.wait_time_minutes > 0 %}
+                            <span class="{% if order.wait_time_minutes > 10 %}text-danger{% elif order.wait_time_minutes > 5 %}text-warning{% else %}text-muted{% endif %}">
+                                {{ "%.0f"|format(order.wait_time_minutes) }}m
+                            </span>
+                        {% else %}
+                            <span class="text-muted">-</span>
+                        {% endif %}
+                    </td>
                     <td>{{ order.notes or '' }}</td>
                     <td>
                         <span class="status-badge {{ order.status }}">
