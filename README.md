@@ -51,6 +51,7 @@ A modern point-of-sale (POS) system built specifically for coffee shops, featuri
 
 ### Production Deployment
 
+#### Option 1: Standard Deployment (with exposed ports)
 1. **Configure production environment**
    ```bash
    cp .env.prod.example .env.prod
@@ -62,6 +63,30 @@ A modern point-of-sale (POS) system built specifically for coffee shops, featuri
    docker-compose -f docker-compose.prod.yml up -d
    ```
 
+#### Option 2: Cloudflare Tunnel Deployment (Recommended)
+1. **Configure production environment**
+   ```bash
+   cp .env.prod.example .env.prod
+   # Edit .env.prod with production settings
+   ```
+
+2. **Deploy the application stack**
+   ```bash
+   docker-compose -f docker-compose.prod.yml up -d
+   ```
+
+3. **Set up Cloudflare tunnel**
+   - Install cloudflared on your server
+   - Create a tunnel: `cloudflared tunnel create hebrews-coffee`
+   - Copy `cloudflare-tunnel.yml` to `~/.cloudflared/config.yml`
+   - Configure the tunnel to point to `http://localhost:3001` (nginx container)
+   - Set up DNS record: `yoururl.com` → tunnel
+   - Run the tunnel: `cloudflared tunnel run hebrews-coffee`
+
+4. **Access the application**
+   - Public URL: `https://yoururl.com`
+   - The application is secured behind Cloudflare's network
+
 ## Environment Variables
 
 Create a `.env` file with the following variables:
@@ -70,7 +95,10 @@ Create a `.env` file with the following variables:
 FLASK_SECRET_KEY=your-secret-key-here
 APP_USERNAME=admin
 APP_PASSWORD=your-secure-password
+DOMAIN=https://yoururl.com.com
 ```
+
+For production, update `.env.prod` with your specific values.
 
 ## API Endpoints
 

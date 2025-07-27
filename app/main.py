@@ -30,21 +30,6 @@ users = {
 # Initialize CSRF protection
 csrf = CSRFProtect(app)
 
-# ---------- Login Helpers ----------
-def login_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if 'user' not in session:
-            return redirect(url_for('login'))
-        return f(*args, **kwargs)
-    return decorated_function
-
-@app.after_request
-def add_csrf_header(response):
-    if 'text/html' in response.headers.get('Content-Type', ''):
-        response.set_cookie('csrf_token', generate_csrf())
-    return response
-
 # ---------- Database Helpers ----------
 def get_db():
     db = getattr(g, '_database', None)
@@ -126,6 +111,35 @@ def create_tables():
     
     db.commit()
     db.close()
+
+# Initialize database tables on app startup
+def init_db():
+    """Initialize database tables if they don't exist"""
+    try:
+        # Ensure the directory exists
+        os.makedirs(os.path.dirname(DATABASE), exist_ok=True)
+        create_tables()
+        print("Database initialized successfully")
+    except Exception as e:
+        print(f"Error initializing database: {e}")
+
+# Initialize database when app starts
+init_db()
+
+# ---------- Login Helpers ----------
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user' not in session:
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+@app.after_request
+def add_csrf_header(response):
+    if 'text/html' in response.headers.get('Content-Type', ''):
+        response.set_cookie('csrf_token', generate_csrf())
+    return response
 
 # ---------- Auth Routes ----------
 @app.route('/login', methods=['GET', 'POST'])

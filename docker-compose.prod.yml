@@ -8,7 +8,7 @@ services:
       context: .
       dockerfile: Dockerfile.prod
     ports:
-      - "80:5000"
+      - "3000:5000"
     volumes:
       - hebrews_data:/app/data
       - ./logs:/app/logs
@@ -36,8 +36,7 @@ services:
     image: nginx:alpine
     container_name: hebrews-nginx
     ports:
-      - "443:443"
-      - "80:80"
+      - "3001:80"
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
       - ./ssl:/etc/nginx/ssl:ro

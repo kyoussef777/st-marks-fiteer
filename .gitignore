@@ -54,3 +54,8 @@ storybook-static/
 *.stories.tsx
 sb-*
 chromatic-*
+
+# Cloudflare tunnel credentials
+.cloudflared/
+*.json
+cloudflared.log
