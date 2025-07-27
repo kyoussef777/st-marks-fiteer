@@ -156,31 +156,38 @@ For production, update `.env.prod` with your specific values.
 ```
 hebrews-coffee/
 ├── app/
-│   ├── main.py              # Main Flask application
+│   ├── main.py                   # Main Flask application
 │   ├── static/
-│   │   ├── styles.css       # Main stylesheet
-│   │   ├── logo.png         # Company logo
-│   │   ├── watermark.png    # Label watermark
+│   │   ├── styles.css            # Main stylesheet
+│   │   ├── logo.png              # Company logo
+│   │   ├── watermark.png         # Label watermark
 │   │   └── js/
-│   │       ├── chart.js     # Analytics charts
-│   │       ├── customer-autocomplete.js
-│   │       ├── menu-editor.js
-│   │       ├── order-management.js
-│   │       └── refresh.js
+│   │       ├── chart.js                  # Analytics charts
+│   │       ├── customer-autocomplete.js # Customer search/autocomplete
+│   │       ├── menu-editor.js           # Menu management UI
+│   │       ├── order-management.js      # Admin order tools
+│   │       └── refresh.js               # Auto-refresh logic
 │   └── templates/
-│       ├── base.html        # Base template
-│       ├── index.html       # Main order interface
-│       ├── orders.html      # Order management
-│       ├── in_progress.html # Active orders
-│       ├── completed.html   # Analytics dashboard
-│       └── login.html       # Authentication
-├── docker-compose.yml       # Development compose
-├── docker-compose.prod.yml  # Production compose
-├── Dockerfile              # Development container
-├── Dockerfile.prod         # Production container
-├── nginx.conf              # Nginx configuration
-├── requirements.txt        # Python dependencies
-└── README.md              # This file
+│       ├── base.html            # Base template
+│       ├── index.html           # Main order interface
+│       ├── orders.html          # Order management
+│       ├── in_progress.html     # Active orders
+│       ├── completed.html       # Analytics dashboard
+│       └── login.html           # Authentication
+├── .env                         # Local environment variables
+├── .gitignore                   # Git ignored files and folders
+├── cleanup-and-rebuild.sh       # Utility script for Docker cleanup
+├── docker-compose.yml           # Development Docker Compose config
+├── docker-compose.prod.yml      # Production Docker Compose config
+├── Dockerfile                   # Development Dockerfile
+├── Dockerfile.prod              # Production Dockerfile
+├── example.env                  # Sample environment config
+├── LICENSE                      # Project license
+├── nginx.conf                   # Nginx config for deployment
+├── nginx.conf.template          # Template for dynamic Nginx config
+├── README.md                    # Project overview and usage
+├── README-PRODUCTION.md         # Production setup documentation
+└── requirements.txt             # Python dependencies
 ```
 
 ## Contributing
