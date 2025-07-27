@@ -75,6 +75,35 @@ def create_tables():
             created_at TEXT NOT NULL
         )
     """)
+    
+    # Create menu configuration table
+    db.execute("""
+        CREATE TABLE IF NOT EXISTS menu_config (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            item_type TEXT NOT NULL,
+            item_name TEXT NOT NULL,
+            price REAL,
+            created_at TEXT NOT NULL
+        )
+    """)
+    
+    # Insert default menu items if table is empty
+    existing_items = db.execute("SELECT COUNT(*) FROM menu_config").fetchone()[0]
+    if existing_items == 0:
+        default_items = [
+            ('drink', 'Latte', 4.0),
+            ('drink', 'Coffee', 3.0),
+            ('milk', 'Whole', None),
+            ('milk', 'Oat', None),
+            ('milk', 'Almond', None),
+            ('milk', 'None', None)
+        ]
+        for item_type, item_name, price in default_items:
+            db.execute(
+                "INSERT INTO menu_config (item_type, item_name, price, created_at) VALUES (?, ?, ?, datetime('now'))",
+                (item_type, item_name, price)
+            )
+    
     db.commit()
     db.close()
 
@@ -105,7 +134,9 @@ def logout():
 def index():
     db = get_db()
     orders = db.execute('SELECT * FROM orders ORDER BY created_at DESC').fetchall()
-    return render_template('index.html', orders=orders)
+    drinks = db.execute('SELECT * FROM menu_config WHERE item_type = "drink" ORDER BY item_name').fetchall()
+    milks = db.execute('SELECT * FROM menu_config WHERE item_type = "milk" ORDER BY item_name').fetchall()
+    return render_template('index.html', orders=orders, drinks=drinks, milks=milks)
 
 @app.route('/in_progress')
 @login_required
@@ -125,11 +156,18 @@ def order():
     notes = request.form.get('notes', '')
     extra_shot = request.form.get('extra_shot') == 'true'
 
-    price = 4.0 if drink == 'Latte' else 3.0 if drink == 'Coffee' else 0.0
+    db = get_db()
+    
+    # Get price from database
+    drink_price = db.execute(
+        'SELECT price FROM menu_config WHERE item_type = "drink" AND item_name = ?', 
+        (drink,)
+    ).fetchone()
+    
+    price = drink_price['price'] if drink_price and drink_price['price'] else 0.0
     if extra_shot:
         price += 1.0
 
-    db = get_db()
     db.execute(
         '''
         INSERT INTO orders 
@@ -185,9 +223,17 @@ def completed_orders():
     completed = db.execute('SELECT * FROM orders WHERE status = "completed" ORDER BY created_at DESC').fetchall()
 
     total_drinks = len(completed)
-    total_lattes = len([o for o in completed if o['drink'] == 'Latte'])
-    total_coffees = len([o for o in completed if o['drink'] == 'Coffee'])
     total_money = sum(o['price'] for o in completed)
+    
+    # Calculate drink counts dynamically
+    drink_counts = {}
+    for order in completed:
+        drink_name = order['drink']
+        drink_counts[drink_name] = drink_counts.get(drink_name, 0) + 1
+    
+    # For backward compatibility, still provide total_lattes and total_coffees
+    total_lattes = drink_counts.get('Latte', 0)
+    total_coffees = drink_counts.get('Coffee', 0)
 
     return render_template(
         'completed.html',
@@ -195,7 +241,8 @@ def completed_orders():
         total_drinks=total_drinks,
         total_lattes=total_lattes,
         total_coffees=total_coffees,
-        total_money=total_money
+        total_money=total_money,
+        drink_counts=drink_counts
     )
 
 @app.route('/export_completed_csv')
@@ -278,6 +325,71 @@ def create_label(order_id):
         mimetype='application/pdf',
         download_name=f'label_{order_id}.pdf'
     )
+
+# ---------- Menu Management Routes ----------
+@app.route('/update_menu_item/<int:item_id>', methods=['POST'])
+@login_required
+def update_menu_item(item_id):
+    item_name = request.form.get('item_name')
+    price = request.form.get('price')
+    
+    if not item_name:
+        return 'Item name is required', 400
+    
+    db = get_db()
+    if price and price.strip():
+        try:
+            price_float = float(price)
+            db.execute('UPDATE menu_config SET item_name = ?, price = ? WHERE id = ?', 
+                      (item_name, price_float, item_id))
+        except ValueError:
+            return 'Invalid price format', 400
+    else:
+        db.execute('UPDATE menu_config SET item_name = ? WHERE id = ?', 
+                  (item_name, item_id))
+    
+    db.commit()
+    return 'OK'
+
+@app.route('/add_menu_item', methods=['POST'])
+@login_required
+def add_menu_item():
+    item_type = request.form.get('item_type')
+    item_name = request.form.get('item_name')
+    price = request.form.get('price')
+    
+    if not item_type or not item_name:
+        return 'Item type and name are required', 400
+    
+    if item_type not in ['drink', 'milk']:
+        return 'Invalid item type', 400
+    
+    db = get_db()
+    if price and price.strip():
+        try:
+            price_float = float(price)
+            db.execute(
+                'INSERT INTO menu_config (item_type, item_name, price, created_at) VALUES (?, ?, ?, datetime("now"))',
+                (item_type, item_name, price_float)
+            )
+        except ValueError:
+            return 'Invalid price format', 400
+    else:
+        db.execute(
+            'INSERT INTO menu_config (item_type, item_name, price, created_at) VALUES (?, ?, ?, datetime("now"))',
+            (item_type, item_name, None)
+        )
+    
+    db.commit()
+    return 'OK'
+
+@app.route('/delete_menu_item/<int:item_id>', methods=['POST'])
+@login_required
+def delete_menu_item(item_id):
+    db = get_db()
+    db.execute('DELETE FROM menu_config WHERE id = ?', (item_id,))
+    db.commit()
+    return 'OK'
 
 # ---------- Entry Point ----------
 if __name__ == "__main__":

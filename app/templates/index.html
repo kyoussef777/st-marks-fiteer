@@ -3,7 +3,10 @@
 {% block title %}HeBrews Coffee Cart{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-end mb-3">
+<div class="d-flex justify-content-between mb-3">
+  <button id="editMenuBtn" class="btn btn-outline-secondary btn-sm">
+    ✏️ Edit Menu
+  </button>
   <a href="{{ url_for('completed_orders') }}" class="btn btn-outline-success btn-sm">
     ✔️ View Completed Orders
   </a>
@@ -21,22 +24,70 @@
     </div>
 
     <div class="col-md-3">
-      <label for="drink" class="form-label">Drink</label>
-      <select name="drink" id="drink" class="form-select" required>
-        <option value="">Select a drink</option>
-        <option value="Latte">Latte ($4)</option>
-        <option value="Coffee">Coffee ($3)</option>
-      </select>
+      <label for="drink" class="form-label">
+        Drink
+        <span id="editDrinksIcon" class="edit-icon" style="display: none;">✏️</span>
+      </label>
+      <div id="drinkSelectContainer">
+        <select name="drink" id="drink" class="form-select" required>
+          <option value="">Select a drink</option>
+          {% for drink in drinks %}
+          <option value="{{ drink.item_name }}">{{ drink.item_name }} (${{ "%.2f"|format(drink.price) }})</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div id="drinkEditContainer" style="display: none;">
+        {% for drink in drinks %}
+        <div class="edit-item mb-2" data-id="{{ drink.id }}" data-type="drink">
+          <div class="input-group input-group-sm">
+            <input type="text" class="form-control item-name" value="{{ drink.item_name }}" placeholder="Drink name">
+            <span class="input-group-text">$</span>
+            <input type="number" class="form-control item-price" value="{{ drink.price }}" step="0.01" placeholder="Price">
+            <button class="btn btn-outline-success save-item" type="button">💾</button>
+            <button class="btn btn-outline-danger delete-item" type="button">🗑️</button>
+          </div>
+        </div>
+        {% endfor %}
+        <div class="add-item">
+          <div class="input-group input-group-sm">
+            <input type="text" class="form-control new-item-name" placeholder="New drink name">
+            <span class="input-group-text">$</span>
+            <input type="number" class="form-control new-item-price" step="0.01" placeholder="Price">
+            <button class="btn btn-outline-primary add-drink" type="button">➕ Add Drink</button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="col-md-2">
-      <label for="milk" class="form-label">Milk</label>
-      <select name="milk" id="milk" class="form-select" required>
-        <option>Whole</option>
-        <option>Oat</option>
-        <option>Almond</option>
-        <option>None</option>
-      </select>
+      <label for="milk" class="form-label">
+        Milk
+        <span id="editMilksIcon" class="edit-icon" style="display: none;">✏️</span>
+      </label>
+      <div id="milkSelectContainer">
+        <select name="milk" id="milk" class="form-select" required>
+          {% for milk in milks %}
+          <option value="{{ milk.item_name }}">{{ milk.item_name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div id="milkEditContainer" style="display: none;">
+        {% for milk in milks %}
+        <div class="edit-item mb-2" data-id="{{ milk.id }}" data-type="milk">
+          <div class="input-group input-group-sm">
+            <input type="text" class="form-control item-name" value="{{ milk.item_name }}" placeholder="Milk type">
+            <button class="btn btn-outline-success save-item" type="button">💾</button>
+            <button class="btn btn-outline-danger delete-item" type="button">🗑️</button>
+          </div>
+        </div>
+        {% endfor %}
+        <div class="add-item">
+          <div class="input-group input-group-sm">
+            <input type="text" class="form-control new-item-name" placeholder="New milk type">
+            <button class="btn btn-outline-primary add-milk" type="button">➕ Add Milk</button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="col-md-2">
@@ -74,4 +125,5 @@
 </div>
 
 <script src="{{ url_for('static', filename='js/refresh.js') }}"></script>
+<script src="{{ url_for('static', filename='js/menu-editor.js') }}"></script>
 {% endblock %}

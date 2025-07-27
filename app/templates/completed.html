@@ -5,7 +5,7 @@
 {% block content %}
 <div class="d-flex justify-content-end mb-3">
   <a href="{{ url_for('index') }}" class="btn btn-outline-primary btn-sm">
-    ☕ Back to Cart
+    ☕ New Order
   </a>
 </div>
 
@@ -45,12 +45,11 @@
         <li class="list-group-item d-flex justify-content-between">
           <span>Total Drinks Made:</span> <strong>{{ total_drinks }}</strong>
         </li>
+        {% for drink_name, count in drink_counts.items() %}
         <li class="list-group-item d-flex justify-content-between">
-          <span>Total Lattes:</span> <strong>{{ total_lattes }}</strong>
+          <span>Total {{ drink_name }}s:</span> <strong>{{ count }}</strong>
         </li>
-        <li class="list-group-item d-flex justify-content-between">
-          <span>Total Coffees:</span> <strong>{{ total_coffees }}</strong>
-        </li>
+        {% endfor %}
         <li class="list-group-item d-flex justify-content-between">
           <span>Total Money Made:</span> <strong>${{ "%.2f"|format(total_money) }}</strong>
         </li>
@@ -70,7 +69,8 @@
 <script>
   window.chartData = {
     totalLattes: {{ total_lattes | tojson }},
-    totalCoffees: {{ total_coffees | tojson }}
+    totalCoffees: {{ total_coffees | tojson }},
+    drinkCounts: {{ drink_counts | tojson }}
   };
 </script>
 <script src="{{ url_for('static', filename='js/chart.js') }}"></script>

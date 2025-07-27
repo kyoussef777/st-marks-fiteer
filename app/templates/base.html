@@ -20,6 +20,7 @@
         <div class="navbar-nav me-auto">
             <a class="nav-link" href="{{ url_for('index') }}">New Order</a>
             <a class="nav-link" href="{{ url_for('orders') }}">Current Orders</a>
+            <a class="nav-link" href="{{ url_for('completed_orders') }}">Completed Orders</a>
         </div>
         <div class="d-flex">
             {% if session.get('user') %}

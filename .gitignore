@@ -1,1 +1,45 @@
+# Environment files
 .env
+.env.local
+.env.prod
+
+# Database files
+*.sqlite3
+*.db
+app/db.sqlite3
+app/data/
+
+# Logs
+logs/
+*.log
+
+# SSL certificates
+ssl/
+*.pem
+*.key
+*.crt
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Docker
+.dockerignore
+
+# Backup files
+backup-*.tar.gz
+*.backup
