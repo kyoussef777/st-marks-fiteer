@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid mt-3">
+    <!-- Search and Filter Controls -->
+    <div class="row mb-3">
+        <div class="col-12 col-md-6 mb-2 mb-md-0">
+            <form method="GET" class="d-flex">
+                <input type="text" name="search" class="form-control me-2" placeholder="Search orders..." value="{{ search }}">
+                <button type="submit" class="btn btn-outline-primary btn-sm">
+                    <span class="d-none d-sm-inline">Search</span>
+                    <span class="d-sm-none">🔍</span>
+                </button>
+            </form>
+        </div>
+        <div class="col-12 col-md-6">
+            <form method="GET" class="d-flex">
+                <input type="hidden" name="search" value="{{ search }}">
+                <select name="status" class="form-select me-2" onchange="this.form.submit()">
+                    <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All Orders</option>
+                    <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending</option>
+                    <option value="in_progress" {% if status_filter == 'in_progress' %}selected{% endif %}>In Progress</option>
+                    <option value="completed" {% if status_filter == 'completed' %}selected{% endif %}>Completed</option>
+                </select>
+            </form>
+        </div>
+    </div>
+    
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Customer</th>
+                    <th>Drink</th>
+                    <th>Milk</th>
+                    <th>Syrup</th>
+                    <th>Foam</th>
+                    <th>Temp</th>
+                    <th>Extra Shot</th>
+                    <th>Wait Time</th>
+                    <th>Notes</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for order in orders %}
+                <tr class="order-row {{ order.status }}">
+                    <td>{{ order.id }}</td>
+                    <td>{{ order.customer_name }}</td>
+                    <td>{{ order.drink }}</td>
+                    <td>{{ order.milk }}</td>
+                    <td>{{ order.syrup or '' }}</td>
+                    <td>{{ order.foam or '' }}</td>
+                    <td>{{ order.temperature }}</td>
+                    <td>{{ 'Yes' if order.extra_shot else 'No' }}</td>
+                    <td>
+                        {% if order.wait_time_minutes > 0 %}
+                            <span class="{% if order.wait_time_minutes > 10 %}text-danger{% elif order.wait_time_minutes > 5 %}text-warning{% else %}text-muted{% endif %}">
+                                {{ "%.0f"|format(order.wait_time_minutes) }}m
+                            </span>
+                        {% else %}
+                            <span class="text-muted">-</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ order.notes or '' }}</td>
+                    <td>
+                        <span class="status-badge {{ order.status }}">
+                            {{ order.status|title }}
+                        </span>
+                    </td>
+                    <td class="actions">
+                        {% if order.status == 'pending' %}
+                        <button class="btn btn-sm btn-primary" onclick="updateStatus({{ order.id }}, 'in_progress')">
+                            Start
+                        </button>
+                        {% endif %}
+                        {% if order.status == 'in_progress' %}
+                        <button class="btn btn-sm btn-success" onclick="updateStatus({{ order.id }}, 'completed')">
+                            Complete
+                        </button>
+                        {% endif %}
+                        <button class="btn btn-sm btn-info" onclick="createLabel({{ order.id }})">
+                            Print
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteOrder({{ order.id }})">
+                            Delete
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+function updateStatus(orderId, newStatus) {
+    fetch(`/update_status/${orderId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': getCookie('csrf_token')
+        },
+        body: `status=${newStatus}`
+    })
+    .then(response => {
+        if (response.ok) {
+            window.location.reload();
+        } else {
+            alert('Failed to update order status');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to update order status');
+    });
+}
+
+function createLabel(orderId) {
+    window.open(`/create_label/${orderId}`, '_blank');
+}
+
+function deleteOrder(orderId) {
+    if (!confirm('Are you sure you want to delete this order?')) {
+        return;
+    }
+    
+    fetch(`/delete_order/${orderId}`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrf_token')
+        }
+    })
+    .then(response => {
+        if (response.ok) {
+            window.location.reload();
+        } else {
+            alert('Failed to delete order');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to delete order');
+    });
+}
+
+// Auto-refresh the page every 5 seconds
+setInterval(() => {
+    window.location.reload();
+}, 5000);
+</script>
+{% endblock %}

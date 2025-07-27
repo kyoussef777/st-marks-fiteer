@@ -5,59 +5,171 @@
 {% block content %}
 <div class="d-flex justify-content-end mb-3">
   <a href="{{ url_for('index') }}" class="btn btn-outline-primary btn-sm">
-    ☕ Back to Cart
+    ☕ New Order
   </a>
 </div>
 
-<h1 class="mb-4">Completed Orders</h1>
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1>Completed Orders</h1>
+  <button class="btn btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#completedOrdersList" aria-expanded="false" aria-controls="completedOrdersList">
+    <span class="d-none d-sm-inline">Toggle Orders List</span>
+    <span class="d-sm-none">📋</span>
+  </button>
+</div>
 
-{% if completed %}
-  <div class="completed-orders mb-4">
-    <ul class="list-group">
-      {% for order in completed %}
-        <li class="list-group-item d-flex justify-content-between align-items-center">
-          <div>
-            <strong>{{ order.customer_name }}'s {{ order.drink }}</strong> ({{ order.milk }}, {{ order.temperature }})
-            {% if order.extra_shot %}
-              <br><small class="text-muted">+ Extra Shot</small>
-            {% endif %}
-            {% if order.notes %}
-              <br><small class="text-muted">Note: {{ order.notes }}</small>
-            {% endif %}
-            <br><small class="fw-bold">Price: ${{ "%.2f"|format(order.price) }}</small>
-          </div>
-          <form action="{{ url_for('delete_order', order_id=order.id) }}" method="post" style="margin: 0;">
-            <button class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this order?')">Delete</button>
-          </form>
-        </li>
-      {% endfor %}
-    </ul>
-  </div>
-{% else %}
-  <p>No completed orders yet.</p>
-{% endif %}
-
-<div class="summary mb-4">
-  <h4 class="mb-3">Summary</h4>
-  <div class="row">
-    <div class="col-md-6">
+<div class="collapse" id="completedOrdersList">
+  {% if completed %}
+    <div class="completed-orders mb-4">
       <ul class="list-group">
-        <li class="list-group-item d-flex justify-content-between">
-          <span>Total Drinks Made:</span> <strong>{{ total_drinks }}</strong>
-        </li>
-        <li class="list-group-item d-flex justify-content-between">
-          <span>Total Lattes:</span> <strong>{{ total_lattes }}</strong>
-        </li>
-        <li class="list-group-item d-flex justify-content-between">
-          <span>Total Coffees:</span> <strong>{{ total_coffees }}</strong>
-        </li>
-        <li class="list-group-item d-flex justify-content-between">
-          <span>Total Money Made:</span> <strong>${{ "%.2f"|format(total_money) }}</strong>
-        </li>
+        {% for order in completed %}
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            <div>
+              <strong>{{ order.customer_name }}'s {{ order.drink }}</strong> ({{ order.milk }}, {{ order.syrup or 'No syrup' }}, {{ order.foam or 'Regular foam' }}, {{ order.temperature }})
+              {% if order.extra_shot %}
+                <br><small class="text-muted">+ Extra Shot</small>
+              {% endif %}
+              {% if order.notes %}
+                <br><small class="text-muted">Note: {{ order.notes }}</small>
+              {% endif %}
+              <br><small class="fw-bold">Price: ${{ "%.2f"|format(order.price) }}</small>
+            </div>
+            <form action="{{ url_for('delete_order', order_id=order.id) }}" method="post" style="margin: 0;">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this order?')">Delete</button>
+            </form>
+          </li>
+        {% endfor %}
       </ul>
     </div>
-    <div class="col-md-6">
-      <canvas id="summaryChart" width="400" height="200"></canvas>
+  {% else %}
+    <div class="alert alert-info">
+      <p class="mb-0">No completed orders yet.</p>
+    </div>
+  {% endif %}
+</div>
+
+<div class="summary mb-4">
+  <h4 class="mb-3">Analytics Dashboard</h4>
+  
+  <!-- Key Metrics Row -->
+  <div class="row mb-4">
+    <div class="col-6 col-md-3">
+      <div class="card text-center">
+        <div class="card-body">
+          <h5 class="card-title text-primary">{{ total_drinks }}</h5>
+          <p class="card-text small">Total Orders</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card text-center">
+        <div class="card-body">
+          <h5 class="card-title text-success">${{ "%.2f"|format(total_money) }}</h5>
+          <p class="card-text small">Total Revenue</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card text-center">
+        <div class="card-body">
+          <h5 class="card-title text-info">${{ "%.2f"|format(avg_order_value) }}</h5>
+          <p class="card-text small">Avg Order Value</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card text-center">
+        <div class="card-body">
+          <h5 class="card-title text-warning">{{ total_extra_shots }}</h5>
+          <p class="card-text small">Extra Shots</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Detailed Analytics -->
+  <div class="row">
+    <div class="col-lg-6 mb-4">
+      <div class="card">
+        <div class="card-header">
+          <h6 class="mb-0">📊 Drink Breakdown</h6>
+        </div>
+        <div class="card-body">
+          <canvas id="summaryChart" width="400" height="200"></canvas>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-lg-6 mb-4">
+      <div class="card">
+        <div class="card-header">
+          <h6 class="mb-0">🏆 Most Popular Items</h6>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-12 mb-2">
+              <strong>Drink:</strong> {{ most_popular_drink[0] }} <span class="badge bg-primary">{{ most_popular_drink[1] }}</span>
+            </div>
+            <div class="col-12 mb-2">
+              <strong>Milk:</strong> {{ most_popular_milk[0] }} <span class="badge bg-secondary">{{ most_popular_milk[1] }}</span>
+            </div>
+            <div class="col-12 mb-2">
+              <strong>Syrup:</strong> {{ most_popular_syrup[0] }} <span class="badge bg-info">{{ most_popular_syrup[1] }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Additional Analytics -->
+  <div class="row">
+    <div class="col-md-4 mb-3">
+      <div class="card">
+        <div class="card-header">
+          <h6 class="mb-0">🥛 Milk Preferences</h6>
+        </div>
+        <div class="card-body">
+          {% for milk_type, count in milk_counts.items() %}
+          <div class="d-flex justify-content-between mb-1">
+            <span>{{ milk_type }}:</span>
+            <span class="badge bg-light text-dark">{{ count }}</span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-md-4 mb-3">
+      <div class="card">
+        <div class="card-header">
+          <h6 class="mb-0">🌡️ Temperature Split</h6>
+        </div>
+        <div class="card-body">
+          {% for temp, count in temperature_counts.items() %}
+          <div class="d-flex justify-content-between mb-1">
+            <span>{{ temp }}:</span>
+            <span class="badge bg-light text-dark">{{ count }}</span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-md-4 mb-3">
+      <div class="card">
+        <div class="card-header">
+          <h6 class="mb-0">👥 Top Customers</h6>
+        </div>
+        <div class="card-body">
+          {% for customer, count in top_customers %}
+          <div class="d-flex justify-content-between mb-1">
+            <span class="text-truncate">{{ customer }}:</span>
+            <span class="badge bg-success">{{ count }}</span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -70,7 +182,8 @@
 <script>
   window.chartData = {
     totalLattes: {{ total_lattes | tojson }},
-    totalCoffees: {{ total_coffees | tojson }}
+    totalCoffees: {{ total_coffees | tojson }},
+    drinkCounts: {{ drink_counts | tojson }}
   };
 </script>
 <script src="{{ url_for('static', filename='js/chart.js') }}"></script>

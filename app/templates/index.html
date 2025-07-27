@@ -3,7 +3,10 @@
 {% block title %}HeBrews Coffee Cart{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-end mb-3">
+<div class="d-flex justify-content-between mb-3">
+  <button id="editMenuBtn" class="btn btn-outline-secondary btn-sm">
+    ✏️ Edit Menu
+  </button>
   <a href="{{ url_for('completed_orders') }}" class="btn btn-outline-success btn-sm">
     ✔️ View Completed Orders
   </a>
@@ -12,30 +15,142 @@
 <h1 class="mb-4">HeBrews Coffee Cart</h1>
 
 <form action="{{ url_for('order') }}" method="post" class="mb-4">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   <div class="row g-2 align-items-end">
 
     <div class="col-md-3">
       <label for="customer_name" class="form-label">Name</label>
-      <input type="text" name="customer_name" id="customer_name" class="form-control" placeholder="Customer Name" required>
+      <input type="text" name="customer_name" id="customer_name" class="form-control" placeholder="Customer Name" required autocomplete="off">
+      <div id="customer-suggestions" class="dropdown-menu" style="display: none;"></div>
     </div>
 
     <div class="col-md-3">
-      <label for="drink" class="form-label">Drink</label>
-      <select name="drink" id="drink" class="form-select" required>
-        <option value="">Select a drink</option>
-        <option value="Latte">Latte ($4)</option>
-        <option value="Coffee">Coffee ($3)</option>
-      </select>
+      <label for="drink" class="form-label">
+        Drink
+        <span id="editDrinksIcon" class="edit-icon" style="display: none;">✏️</span>
+      </label>
+      <div id="drinkSelectContainer">
+        <select name="drink" id="drink" class="form-select" required>
+          <option value="">Select a drink</option>
+          {% for drink in drinks %}
+          <option value="{{ drink.item_name }}">{{ drink.item_name }} (${{ "%.2f"|format(drink.price) }})</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div id="drinkEditContainer" style="display: none;">
+        {% for drink in drinks %}
+        <div class="edit-item mb-2" data-id="{{ drink.id }}" data-type="drink">
+          <div class="input-group input-group-sm">
+            <input type="text" class="form-control item-name" value="{{ drink.item_name }}" placeholder="Drink name">
+            <span class="input-group-text">$</span>
+            <input type="number" class="form-control item-price" value="{{ drink.price }}" step="0.01" placeholder="Price">
+            <button class="btn btn-outline-success save-item" type="button">💾</button>
+            <button class="btn btn-outline-danger delete-item" type="button">🗑️</button>
+          </div>
+        </div>
+        {% endfor %}
+        <div class="add-item">
+          <div class="input-group input-group-sm">
+            <input type="text" class="form-control new-item-name" placeholder="New drink name">
+            <span class="input-group-text">$</span>
+            <input type="number" class="form-control new-item-price" step="0.01" placeholder="Price">
+            <button class="btn btn-outline-primary add-drink" type="button">➕ Add Drink</button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="col-md-2">
-      <label for="milk" class="form-label">Milk</label>
-      <select name="milk" id="milk" class="form-select" required>
-        <option>Whole</option>
-        <option>Oat</option>
-        <option>Almond</option>
-        <option>None</option>
-      </select>
+      <label for="milk" class="form-label">
+        Milk
+        <span id="editMilksIcon" class="edit-icon" style="display: none;">✏️</span>
+      </label>
+      <div id="milkSelectContainer">
+        <select name="milk" id="milk" class="form-select" required>
+          {% for milk in milks %}
+          <option value="{{ milk.item_name }}">{{ milk.item_name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div id="milkEditContainer" style="display: none;">
+        {% for milk in milks %}
+        <div class="edit-item mb-2" data-id="{{ milk.id }}" data-type="milk">
+          <div class="input-group input-group-sm">
+            <input type="text" class="form-control item-name" value="{{ milk.item_name }}" placeholder="Milk type">
+            <button class="btn btn-outline-success save-item" type="button">💾</button>
+            <button class="btn btn-outline-danger delete-item" type="button">🗑️</button>
+          </div>
+        </div>
+        {% endfor %}
+        <div class="add-item">
+          <div class="input-group input-group-sm">
+            <input type="text" class="form-control new-item-name" placeholder="New milk type">
+            <button class="btn btn-outline-primary add-milk" type="button">➕ Add Milk</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-2">
+      <label for="syrup" class="form-label">
+        Syrup
+        <span id="editSyrupsIcon" class="edit-icon" style="display: none;">✏️</span>
+      </label>
+      <div id="syrupSelectContainer">
+        <select name="syrup" id="syrup" class="form-select" required>
+          {% for syrup in syrups %}
+          <option value="{{ syrup.item_name }}">{{ syrup.item_name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div id="syrupEditContainer" style="display: none;">
+        {% for syrup in syrups %}
+        <div class="edit-item mb-2" data-id="{{ syrup.id }}" data-type="syrup">
+          <div class="input-group input-group-sm">
+            <input type="text" class="form-control item-name" value="{{ syrup.item_name }}" placeholder="Syrup type">
+            <button class="btn btn-outline-success save-item" type="button">💾</button>
+            <button class="btn btn-outline-danger delete-item" type="button">🗑️</button>
+          </div>
+        </div>
+        {% endfor %}
+        <div class="add-item">
+          <div class="input-group input-group-sm">
+            <input type="text" class="form-control new-item-name" placeholder="New syrup type">
+            <button class="btn btn-outline-primary add-syrup" type="button">➕ Add Syrup</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-2">
+      <label for="foam" class="form-label">
+        Foam
+        <span id="editFoamsIcon" class="edit-icon" style="display: none;">✏️</span>
+      </label>
+      <div id="foamSelectContainer">
+        <select name="foam" id="foam" class="form-select" required>
+          {% for foam in foams %}
+          <option value="{{ foam.item_name }}">{{ foam.item_name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div id="foamEditContainer" style="display: none;">
+        {% for foam in foams %}
+        <div class="edit-item mb-2" data-id="{{ foam.id }}" data-type="foam">
+          <div class="input-group input-group-sm">
+            <input type="text" class="form-control item-name" value="{{ foam.item_name }}" placeholder="Foam type">
+            <button class="btn btn-outline-success save-item" type="button">💾</button>
+            <button class="btn btn-outline-danger delete-item" type="button">🗑️</button>
+          </div>
+        </div>
+        {% endfor %}
+        <div class="add-item">
+          <div class="input-group input-group-sm">
+            <input type="text" class="form-control new-item-name" placeholder="New foam type">
+            <button class="btn btn-outline-primary add-foam" type="button">➕ Add Foam</button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="col-md-2">
@@ -73,4 +188,6 @@
 </div>
 
 <script src="{{ url_for('static', filename='js/refresh.js') }}"></script>
+<script src="{{ url_for('static', filename='js/menu-editor.js') }}"></script>
+<script src="{{ url_for('static', filename='js/customer-autocomplete.js') }}"></script>
 {% endblock %}
