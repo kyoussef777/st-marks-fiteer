@@ -399,8 +399,8 @@ def create_label(order_id):
         return "Order not found", 404
 
     buffer = io.BytesIO()
-    label_width = 3 * inch
-    label_height = 3 * inch
+    label_width = 3.5 * inch
+    label_height = 1.1 * inch
     c = canvas.Canvas(buffer, pagesize=(label_width, label_height))
 
     logo_path = os.path.join(app.root_path, 'static', 'watermark.png')
