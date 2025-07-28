@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}In Progress Orders - HeBrews Coffee{% endblock %}
+{% block title %}In Progress Orders - St. Mark's Feteer{% endblock %}
 
 {% block content %}
 {% if orders %}
@@ -9,9 +9,9 @@
       <li class="list-group-item d-flex justify-content-between align-items-center">
 
         <div>
-          <strong>{{ order.customer_name }}'s {{ order.drink }}</strong> ({{ order.milk }}, {{ order.syrup or 'No syrup' }}, {{ order.foam or 'Regular foam' }}, {{ order.temperature }})
-          {% if order.extra_shot %}
-            <br><small class="text-muted">+ Extra Shot</small>
+          <strong>{{ order.customer_name }}'s {{ order.feteer_type }}</strong>
+          {% if order.item_name_arabic %}
+            <br><small class="text-muted">{{ order.item_name_arabic }}</small>
           {% endif %}
           {% if order.notes %}
             <br><small class="text-muted">Note: {{ order.notes }}</small>

@@ -1,16 +1,16 @@
 {% extends "base.html" %}
 
-{% block title %}Completed Orders - HeBrews Coffee{% endblock %}
+{% block title %}Completed Orders - St. Mark's Feteer{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-end mb-3">
   <a href="{{ url_for('index') }}" class="btn btn-outline-primary btn-sm">
-    ☕ New Order
+    🥞 New Order
   </a>
 </div>
 
 <div class="d-flex justify-content-between align-items-center mb-4">
-  <h1>Completed Orders</h1>
+  <h1>Completed Orders | الطلبات المكتملة</h1>
   <button class="btn btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#completedOrdersList" aria-expanded="false" aria-controls="completedOrdersList">
     <span class="d-none d-sm-inline">Toggle Orders List</span>
     <span class="d-sm-none">📋</span>
@@ -24,10 +24,7 @@
         {% for order in completed %}
           <li class="list-group-item d-flex justify-content-between align-items-center">
             <div>
-              <strong>{{ order.customer_name }}'s {{ order.drink }}</strong> ({{ order.milk }}, {{ order.syrup or 'No syrup' }}, {{ order.foam or 'Regular foam' }}, {{ order.temperature }})
-              {% if order.extra_shot %}
-                <br><small class="text-muted">+ Extra Shot</small>
-              {% endif %}
+              <strong>{{ order.customer_name }}'s {{ order.feteer_type }}</strong>
               {% if order.notes %}
                 <br><small class="text-muted">Note: {{ order.notes }}</small>
               {% endif %}
@@ -49,15 +46,15 @@
 </div>
 
 <div class="summary mb-4">
-  <h4 class="mb-3">Analytics Dashboard</h4>
+  <h4 class="mb-3">Analytics Dashboard | لوحة التحليلات</h4>
   
   <!-- Key Metrics Row -->
   <div class="row mb-4">
     <div class="col-6 col-md-3">
       <div class="card text-center">
         <div class="card-body">
-          <h5 class="card-title text-primary">{{ total_drinks }}</h5>
-          <p class="card-text small">Total Orders</p>
+          <h5 class="card-title text-primary">{{ total_orders }}</h5>
+          <p class="card-text small">Total Orders<br>إجمالي الطلبات</p>
         </div>
       </div>
     </div>
@@ -65,7 +62,7 @@
       <div class="card text-center">
         <div class="card-body">
           <h5 class="card-title text-success">${{ "%.2f"|format(total_money) }}</h5>
-          <p class="card-text small">Total Revenue</p>
+          <p class="card-text small">Total Revenue<br>إجمالي الإيرادات</p>
         </div>
       </div>
     </div>
@@ -73,15 +70,15 @@
       <div class="card text-center">
         <div class="card-body">
           <h5 class="card-title text-info">${{ "%.2f"|format(avg_order_value) }}</h5>
-          <p class="card-text small">Avg Order Value</p>
+          <p class="card-text small">Avg Order Value<br>متوسط قيمة الطلب</p>
         </div>
       </div>
     </div>
     <div class="col-6 col-md-3">
       <div class="card text-center">
         <div class="card-body">
-          <h5 class="card-title text-warning">{{ total_extra_shots }}</h5>
-          <p class="card-text small">Extra Shots</p>
+          <h5 class="card-title text-warning">{{ most_popular_feteer[1] }}</h5>
+          <p class="card-text small">Most Popular<br>الأكثر شعبية</p>
         </div>
       </div>
     </div>
@@ -92,7 +89,7 @@
     <div class="col-lg-6 mb-4">
       <div class="card">
         <div class="card-header">
-          <h6 class="mb-0">📊 Drink Breakdown</h6>
+          <h6 class="mb-0">📊 Feteer Type Breakdown | تفصيل أنواع الفطير</h6>
         </div>
         <div class="card-body">
           <canvas id="summaryChart" width="400" height="200"></canvas>
@@ -103,18 +100,12 @@
     <div class="col-lg-6 mb-4">
       <div class="card">
         <div class="card-header">
-          <h6 class="mb-0">🏆 Most Popular Items</h6>
+          <h6 class="mb-0">🏆 Most Popular Items | العناصر الأكثر شعبية</h6>
         </div>
         <div class="card-body">
           <div class="row">
             <div class="col-12 mb-2">
-              <strong>Drink:</strong> {{ most_popular_drink[0] }} <span class="badge bg-primary">{{ most_popular_drink[1] }}</span>
-            </div>
-            <div class="col-12 mb-2">
-              <strong>Milk:</strong> {{ most_popular_milk[0] }} <span class="badge bg-secondary">{{ most_popular_milk[1] }}</span>
-            </div>
-            <div class="col-12 mb-2">
-              <strong>Syrup:</strong> {{ most_popular_syrup[0] }} <span class="badge bg-info">{{ most_popular_syrup[1] }}</span>
+              <strong>Most Popular Feteer | الفطير الأكثر شعبية:</strong> {{ most_popular_feteer[0] }} <span class="badge bg-primary">{{ most_popular_feteer[1] }}</span>
             </div>
           </div>
         </div>
@@ -124,15 +115,15 @@
 
   <!-- Additional Analytics -->
   <div class="row">
-    <div class="col-md-4 mb-3">
+    <div class="col-md-6 mb-3">
       <div class="card">
         <div class="card-header">
-          <h6 class="mb-0">🥛 Milk Preferences</h6>
+          <h6 class="mb-0">🥞 Feteer Types | أنواع الفطير</h6>
         </div>
         <div class="card-body">
-          {% for milk_type, count in milk_counts.items() %}
+          {% for feteer_type, count in feteer_counts.items() %}
           <div class="d-flex justify-content-between mb-1">
-            <span>{{ milk_type }}:</span>
+            <span>{{ feteer_type }}:</span>
             <span class="badge bg-light text-dark">{{ count }}</span>
           </div>
           {% endfor %}
@@ -140,26 +131,10 @@
       </div>
     </div>
     
-    <div class="col-md-4 mb-3">
+    <div class="col-md-6 mb-3">
       <div class="card">
         <div class="card-header">
-          <h6 class="mb-0">🌡️ Temperature Split</h6>
-        </div>
-        <div class="card-body">
-          {% for temp, count in temperature_counts.items() %}
-          <div class="d-flex justify-content-between mb-1">
-            <span>{{ temp }}:</span>
-            <span class="badge bg-light text-dark">{{ count }}</span>
-          </div>
-          {% endfor %}
-        </div>
-      </div>
-    </div>
-    
-    <div class="col-md-4 mb-3">
-      <div class="card">
-        <div class="card-header">
-          <h6 class="mb-0">👥 Top Customers</h6>
+          <h6 class="mb-0">👥 Top Customers | أفضل العملاء</h6>
         </div>
         <div class="card-body">
           {% for customer, count in top_customers %}
@@ -175,15 +150,13 @@
 </div>
 
 <form action="{{ url_for('export_completed_csv') }}" method="get">
-  <button type="submit" class="btn btn-outline-primary">Export to CSV</button>
+  <button type="submit" class="btn btn-outline-primary">Export to CSV | تصدير إلى CSV</button>
 </form>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
   window.chartData = {
-    totalLattes: {{ total_lattes | tojson }},
-    totalCoffees: {{ total_coffees | tojson }},
-    drinkCounts: {{ drink_counts | tojson }}
+    feteerCounts: {{ feteer_counts | tojson | safe }}
   };
 </script>
 <script src="{{ url_for('static', filename='js/chart.js') }}"></script>

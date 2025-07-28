@@ -1,12 +1,12 @@
 document.addEventListener('DOMContentLoaded', () => {
   const ctx = document.getElementById('summaryChart').getContext('2d');
   
-  // Get dynamic drink data
-  const drinkCounts = window.chartData.drinkCounts || {};
-  const labels = Object.keys(drinkCounts);
-  const data = Object.values(drinkCounts);
+  // Get dynamic feteer data
+  const feteerCounts = window.chartData.feteerCounts || {};
+  const labels = Object.keys(feteerCounts);
+  const data = Object.values(feteerCounts);
   
-  // Generate colors for each drink type
+  // Generate colors for each feteer type
   const colors = [
     '#8e44ad', '#3498db', '#e74c3c', '#f39c12', '#2ecc71', 
     '#9b59b6', '#1abc9c', '#34495e', '#e67e22', '#95a5a6'
@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
     data: {
       labels: labels,
       datasets: [{
-        label: 'Drinks Made',
+        label: 'Feteer Orders',
         data: data,
         backgroundColor: colors.slice(0, labels.length),
         borderRadius: 5
@@ -29,7 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
         legend: { display: false },
         title: {
           display: true,
-          text: 'Drinks Breakdown',
+          text: 'Feteer Types Breakdown',
           font: { size: 16 }
         }
       },

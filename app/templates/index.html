@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}HeBrews Coffee Cart{% endblock %}
+{% block title %}St. Mark's Feteer{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between mb-3">
@@ -12,38 +12,42 @@
   </a>
 </div>
 
-<h1 class="mb-4">HeBrews Coffee Cart</h1>
+<h1 class="mb-4">St. Mark's Feteer | فطير كنيسة مارمرقس</h1>
 
 <form action="{{ url_for('order') }}" method="post" class="mb-4">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-  <div class="row g-2 align-items-end">
+  <div class="row g-3 align-items-end">
 
-    <div class="col-md-3">
-      <label for="customer_name" class="form-label">Name</label>
+    <div class="col-md-4">
+      <label for="customer_name" class="form-label">
+        Customer Name | اسم العميل
+      </label>
       <input type="text" name="customer_name" id="customer_name" class="form-control" placeholder="Customer Name" required autocomplete="off">
       <div id="customer-suggestions" class="dropdown-menu" style="display: none;"></div>
     </div>
 
-    <div class="col-md-3">
-      <label for="drink" class="form-label">
-        Drink
-        <span id="editDrinksIcon" class="edit-icon" style="display: none;">✏️</span>
+    <div class="col-md-6">
+      <label for="feteer_type" class="form-label">
+        Feteer Type | نوع الفطير
+        <span id="editFeteerIcon" class="edit-icon" style="display: none;">✏️</span>
       </label>
-      <div id="drinkSelectContainer">
-        <select name="drink" id="drink" class="form-select" required>
-          <option value="">Select a drink</option>
-          {% for drink in drinks %}
-          <option value="{{ drink.item_name }}">{{ drink.item_name }} (${{ "%.2f"|format(drink.price) }})</option>
+      <div id="feteerSelectContainer">
+        <select name="feteer_type" id="feteer_type" class="form-select" required>
+          <option value="">Select a feteer type | اختر نوع الفطير</option>
+          {% for feteer in feteer_types %}
+          <option value="{{ feteer.item_name }}">
+            {{ feteer.item_name }} | {{ feteer.item_name_arabic }} (${{ "%.2f"|format(feteer.price) }})
+          </option>
           {% endfor %}
         </select>
       </div>
-      <div id="drinkEditContainer" style="display: none;">
-        {% for drink in drinks %}
-        <div class="edit-item mb-2" data-id="{{ drink.id }}" data-type="drink">
+      <div id="feteerEditContainer" style="display: none;">
+        {% for feteer in feteer_types %}
+        <div class="edit-item mb-2" data-id="{{ feteer.id }}" data-type="feteer_type">
           <div class="input-group input-group-sm">
-            <input type="text" class="form-control item-name" value="{{ drink.item_name }}" placeholder="Drink name">
+            <input type="text" class="form-control item-name" value="{{ feteer.item_name }}" placeholder="Feteer name">
             <span class="input-group-text">$</span>
-            <input type="number" class="form-control item-price" value="{{ drink.price }}" step="0.01" placeholder="Price">
+            <input type="number" class="form-control item-price" value="{{ feteer.price }}" step="0.01" placeholder="Price">
             <button class="btn btn-outline-success save-item" type="button">💾</button>
             <button class="btn btn-outline-danger delete-item" type="button">🗑️</button>
           </div>
@@ -51,139 +55,29 @@
         {% endfor %}
         <div class="add-item">
           <div class="input-group input-group-sm">
-            <input type="text" class="form-control new-item-name" placeholder="New drink name">
+            <input type="text" class="form-control new-item-name" placeholder="New feteer type">
             <span class="input-group-text">$</span>
             <input type="number" class="form-control new-item-price" step="0.01" placeholder="Price">
-            <button class="btn btn-outline-primary add-drink" type="button">➕ Add Drink</button>
+            <button class="btn btn-outline-primary add-feteer" type="button">➕ Add Feteer Type</button>
           </div>
         </div>
-      </div>
-    </div>
-
-    <div class="col-md-2">
-      <label for="milk" class="form-label">
-        Milk
-        <span id="editMilksIcon" class="edit-icon" style="display: none;">✏️</span>
-      </label>
-      <div id="milkSelectContainer">
-        <select name="milk" id="milk" class="form-select" required>
-          {% for milk in milks %}
-          <option value="{{ milk.item_name }}">{{ milk.item_name }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <div id="milkEditContainer" style="display: none;">
-        {% for milk in milks %}
-        <div class="edit-item mb-2" data-id="{{ milk.id }}" data-type="milk">
-          <div class="input-group input-group-sm">
-            <input type="text" class="form-control item-name" value="{{ milk.item_name }}" placeholder="Milk type">
-            <button class="btn btn-outline-success save-item" type="button">💾</button>
-            <button class="btn btn-outline-danger delete-item" type="button">🗑️</button>
-          </div>
-        </div>
-        {% endfor %}
-        <div class="add-item">
-          <div class="input-group input-group-sm">
-            <input type="text" class="form-control new-item-name" placeholder="New milk type">
-            <button class="btn btn-outline-primary add-milk" type="button">➕ Add Milk</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="col-md-2">
-      <label for="syrup" class="form-label">
-        Syrup
-        <span id="editSyrupsIcon" class="edit-icon" style="display: none;">✏️</span>
-      </label>
-      <div id="syrupSelectContainer">
-        <select name="syrup" id="syrup" class="form-select" required>
-          {% for syrup in syrups %}
-          <option value="{{ syrup.item_name }}">{{ syrup.item_name }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <div id="syrupEditContainer" style="display: none;">
-        {% for syrup in syrups %}
-        <div class="edit-item mb-2" data-id="{{ syrup.id }}" data-type="syrup">
-          <div class="input-group input-group-sm">
-            <input type="text" class="form-control item-name" value="{{ syrup.item_name }}" placeholder="Syrup type">
-            <button class="btn btn-outline-success save-item" type="button">💾</button>
-            <button class="btn btn-outline-danger delete-item" type="button">🗑️</button>
-          </div>
-        </div>
-        {% endfor %}
-        <div class="add-item">
-          <div class="input-group input-group-sm">
-            <input type="text" class="form-control new-item-name" placeholder="New syrup type">
-            <button class="btn btn-outline-primary add-syrup" type="button">➕ Add Syrup</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="col-md-2">
-      <label for="foam" class="form-label">
-        Foam
-        <span id="editFoamsIcon" class="edit-icon" style="display: none;">✏️</span>
-      </label>
-      <div id="foamSelectContainer">
-        <select name="foam" id="foam" class="form-select" required>
-          {% for foam in foams %}
-          <option value="{{ foam.item_name }}">{{ foam.item_name }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <div id="foamEditContainer" style="display: none;">
-        {% for foam in foams %}
-        <div class="edit-item mb-2" data-id="{{ foam.id }}" data-type="foam">
-          <div class="input-group input-group-sm">
-            <input type="text" class="form-control item-name" value="{{ foam.item_name }}" placeholder="Foam type">
-            <button class="btn btn-outline-success save-item" type="button">💾</button>
-            <button class="btn btn-outline-danger delete-item" type="button">🗑️</button>
-          </div>
-        </div>
-        {% endfor %}
-        <div class="add-item">
-          <div class="input-group input-group-sm">
-            <input type="text" class="form-control new-item-name" placeholder="New foam type">
-            <button class="btn btn-outline-primary add-foam" type="button">➕ Add Foam</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="col-md-2">
-      <label for="temperature" class="form-label">Temperature</label>
-      <select name="temperature" id="temperature" class="form-select" required>
-        <option value="Hot">Hot</option>
-        <option value="Iced">Iced</option>
-      </select>
-    </div>
-
-    <div class="col-md-2 d-flex align-items-center">
-      <div class="form-check mt-4">
-        <input class="form-check-input" type="checkbox" id="extra_shot" name="extra_shot" value="true">
-        <label class="form-check-label" for="extra_shot">
-          Extra Shot (+$1)
-        </label>
       </div>
     </div>
 
     <div class="col-md-12 mt-3">
-      <label for="notes" class="form-label">Notes</label>
-      <input type="text" name="notes" id="notes" class="form-control" placeholder="Extra hot, no foam, etc.">
+      <label for="notes" class="form-label">Notes | ملاحظات</label>
+      <input type="text" name="notes" id="notes" class="form-control" placeholder="Special instructions | تعليمات خاصة">
     </div>
 
   </div>
 
   <div class="mt-3">
-    <button class="btn btn-primary" type="submit">Place Order</button>
+    <button class="btn btn-primary" type="submit">Place Order | اطلب الآن</button>
   </div>
 </form>
 
 <div class="pending-orders">
-  <h3>In Progress Orders</h3>
+  <h3>In Progress Orders | الطلبات قيد التحضير</h3>
   <!-- Orders will be loaded here by refresh.js -->
 </div>
 

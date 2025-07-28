@@ -16,7 +16,7 @@ app = Flask(__name__)
 
 load_dotenv()
 
-app.secret_key = os.getenv('FLASK_SECRET_KEY')
+app.secret_key = os.getenv('FLASK_SECRET_KEY', 'dev-secret-key-change-in-production')
 
 # Database path - use environment variable or default based on environment
 if os.path.exists('/app'):  # Running in Docker container
@@ -65,12 +65,7 @@ def create_tables():
             CREATE TABLE IF NOT EXISTS orders (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 customer_name TEXT NOT NULL,
-                drink TEXT NOT NULL,
-                milk TEXT NOT NULL,
-                syrup TEXT,
-                foam TEXT,
-                temperature TEXT NOT NULL,
-                extra_shot INTEGER NOT NULL,
+                feteer_type TEXT NOT NULL,
                 notes TEXT,
                 status TEXT NOT NULL,
                 price REAL NOT NULL,
@@ -78,23 +73,13 @@ def create_tables():
             )
         """)
         
-        # Add syrup and foam columns if they don't exist (for existing databases)
-        try:
-            db.execute("ALTER TABLE orders ADD COLUMN syrup TEXT")
-        except sqlite3.OperationalError:
-            pass  # Column already exists
-        
-        try:
-            db.execute("ALTER TABLE orders ADD COLUMN foam TEXT")
-        except sqlite3.OperationalError:
-            pass  # Column already exists
-        
         # Create menu configuration table
         db.execute("""
             CREATE TABLE IF NOT EXISTS menu_config (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 item_type TEXT NOT NULL,
                 item_name TEXT NOT NULL,
+                item_name_arabic TEXT,
                 price REAL,
                 created_at TEXT NOT NULL
             )
@@ -104,24 +89,15 @@ def create_tables():
         existing_items = db.execute("SELECT COUNT(*) FROM menu_config").fetchone()[0]
         if existing_items == 0:
             default_items = [
-                ('drink', 'Latte', 4.0),
-                ('drink', 'Coffee', 3.0),
-                ('milk', 'Whole', None),
-                ('milk', 'Oat', None),
-                ('milk', 'Almond', None),
-                ('milk', 'None', None),
-                ('syrup', 'Vanilla', None),
-                ('syrup', 'Caramel', None),
-                ('syrup', 'Hazelnut', None),
-                ('syrup', 'None', None),
-                ('foam', 'Regular', None),
-                ('foam', 'Extra Foam', None),
-                ('foam', 'No Foam', None)
+                ('feteer_type', 'Sweet (Custard and Sugar)', 'فطير حلو (كاسترد وسكر)', 8.0),
+                ('feteer_type', 'Mixed Meat', 'فطير باللحمة المشكلة', 12.0),
+                ('feteer_type', 'Mixed Cheese', 'فطير بالجبنة المشكلة', 10.0),
+                ('feteer_type', 'Feteer Meshaltet (Plain)', 'فطير مشلتت', 6.0)
             ]
-            for item_type, item_name, price in default_items:
+            for item_type, item_name, item_name_arabic, price in default_items:
                 db.execute(
-                    "INSERT INTO menu_config (item_type, item_name, price, created_at) VALUES (?, ?, ?, datetime('now'))",
-                    (item_type, item_name, price)
+                    "INSERT INTO menu_config (item_type, item_name, item_name_arabic, price, created_at) VALUES (?, ?, ?, ?, datetime('now'))",
+                    (item_type, item_name, item_name_arabic, price)
                 )
         
         db.commit()
@@ -189,17 +165,19 @@ def logout():
 def index():
     db = get_db()
     orders = db.execute('SELECT * FROM orders ORDER BY created_at DESC').fetchall()
-    drinks = db.execute('SELECT * FROM menu_config WHERE item_type = "drink" ORDER BY item_name').fetchall()
-    milks = db.execute('SELECT * FROM menu_config WHERE item_type = "milk" ORDER BY item_name').fetchall()
-    syrups = db.execute('SELECT * FROM menu_config WHERE item_type = "syrup" ORDER BY item_name').fetchall()
-    foams = db.execute('SELECT * FROM menu_config WHERE item_type = "foam" ORDER BY item_name').fetchall()
-    return render_template('index.html', orders=orders, drinks=drinks, milks=milks, syrups=syrups, foams=foams)
+    feteer_types = db.execute('SELECT * FROM menu_config WHERE item_type = "feteer_type" ORDER BY item_name').fetchall()
+    return render_template('index.html', orders=orders, feteer_types=feteer_types)
 
 @app.route('/in_progress')
 @login_required
 def in_progress_orders():
     db = get_db()
-    orders = db.execute('SELECT * FROM orders ORDER BY created_at DESC').fetchall()
+    orders = db.execute('''
+        SELECT o.*, m.item_name_arabic 
+        FROM orders o 
+        LEFT JOIN menu_config m ON o.feteer_type = m.item_name AND m.item_type = 'feteer_type'
+        ORDER BY o.created_at DESC
+    ''').fetchall()
     in_progress = [o for o in orders if o['status'] != 'completed']
     return render_template('in_progress.html', orders=in_progress)
 
@@ -208,13 +186,8 @@ def in_progress_orders():
 def order():
     # Validate and sanitize all inputs
     customer_name = request.form['customer_name']
-    drink = request.form['drink']
-    milk = request.form.get('milk')
-    syrup = request.form.get('syrup')
-    foam = request.form.get('foam')
-    temperature = request.form.get('temperature')
+    feteer_type = request.form['feteer_type']
     notes = request.form.get('notes', '')
-    extra_shot = request.form.get('extra_shot') == 'true'
 
     # Validate customer name
     is_valid, sanitized_name, error = InputValidator.validate_customer_name(customer_name)
@@ -222,17 +195,10 @@ def order():
         flash(f"Invalid customer name: {error}")
         return redirect(url_for('index'))
     
-    # Validate menu items (drink, milk, syrup, foam)
-    for item_name, item_type in [(drink, 'drink'), (milk, 'milk'), (syrup, 'syrup'), (foam, 'foam')]:
-        if item_name:  # Only validate if not None/empty
-            is_valid, _, error = InputValidator.validate_menu_item(item_name)
-            if not is_valid:
-                flash(f"Invalid {item_type}: {error}")
-                return redirect(url_for('index'))
-    
-    # Validate temperature
-    if temperature and temperature not in ['Hot', 'Iced']:
-        flash("Invalid temperature selection")
+    # Validate feteer type
+    is_valid, _, error = InputValidator.validate_menu_item(feteer_type)
+    if not is_valid:
+        flash(f"Invalid feteer type: {error}")
         return redirect(url_for('index'))
     
     # Validate notes
@@ -244,22 +210,20 @@ def order():
     db = get_db()
     
     # Get price from database
-    drink_price = db.execute(
-        'SELECT price FROM menu_config WHERE item_type = "drink" AND item_name = ?', 
-        (drink,)
+    feteer_price = db.execute(
+        'SELECT price FROM menu_config WHERE item_type = "feteer_type" AND item_name = ?', 
+        (feteer_type,)
     ).fetchone()
     
-    price = drink_price['price'] if drink_price and drink_price['price'] else 0.0
-    if extra_shot:
-        price += 1.0
+    price = feteer_price['price'] if feteer_price and feteer_price['price'] else 0.0
 
     db.execute(
         '''
         INSERT INTO orders 
-        (customer_name, drink, milk, syrup, foam, temperature, extra_shot, notes, status, price, created_at) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime("now"))
+        (customer_name, feteer_type, notes, status, price, created_at) 
+        VALUES (?, ?, ?, ?, ?, datetime("now"))
         ''',
-        (sanitized_name, drink, milk, syrup, foam, temperature, int(extra_shot), sanitized_notes, 'pending', price)
+        (sanitized_name, feteer_type, sanitized_notes, 'pending', price)
     )
     db.commit()
     return redirect(url_for('index'))
@@ -295,13 +259,14 @@ def orders():
         validated_statuses.append(validated_status)
     
     base_query = '''
-        SELECT *, 
+        SELECT o.*, m.item_name_arabic,
                CASE 
-                   WHEN status = 'pending' THEN (julianday('now') - julianday(created_at)) * 24 * 60
-                   WHEN status = 'in_progress' THEN (julianday('now') - julianday(created_at)) * 24 * 60
+                   WHEN o.status = 'pending' THEN (julianday('now') - julianday(o.created_at)) * 24 * 60
+                   WHEN o.status = 'in_progress' THEN (julianday('now') - julianday(o.created_at)) * 24 * 60
                    ELSE 0
                END as wait_time_minutes
-        FROM orders 
+        FROM orders o
+        LEFT JOIN menu_config m ON o.feteer_type = m.item_name AND m.item_type = 'feteer_type'
         WHERE 1=1
     '''
     
@@ -335,7 +300,7 @@ def orders():
             orders = SecureDatabase.safe_like_query(
                 db, 
                 search_query, 
-                ['customer_name', 'drink', 'notes'], 
+                ['customer_name', 'feteer_type', 'notes'], 
                 search, 
                 additional_params
             )
@@ -379,81 +344,40 @@ def completed_orders():
     db = get_db()
     completed = db.execute('SELECT * FROM orders WHERE status = "completed" ORDER BY created_at DESC').fetchall()
 
-    total_drinks = len(completed)
+    total_orders = len(completed)
     total_money = sum(o['price'] for o in completed)
     
-    # Calculate drink counts dynamically
-    drink_counts = {}
-    milk_counts = {}
-    syrup_counts = {}
-    foam_counts = {}
-    temperature_counts = {}
+    # Calculate feteer type counts dynamically
+    feteer_counts = {}
     customer_counts = {}
     
-    total_extra_shots = 0
-    
     for order in completed:
-        # Drink counts
-        drink_name = order['drink']
-        drink_counts[drink_name] = drink_counts.get(drink_name, 0) + 1
-        
-        # Milk counts
-        milk_type = order['milk'] or 'None'
-        milk_counts[milk_type] = milk_counts.get(milk_type, 0) + 1
-        
-        # Syrup counts
-        syrup_type = order['syrup'] or 'None'
-        syrup_counts[syrup_type] = syrup_counts.get(syrup_type, 0) + 1
-        
-        # Foam counts
-        foam_type = order['foam'] or 'Regular'
-        foam_counts[foam_type] = foam_counts.get(foam_type, 0) + 1
-        
-        # Temperature counts
-        temp = order['temperature']
-        temperature_counts[temp] = temperature_counts.get(temp, 0) + 1
+        # Feteer type counts
+        feteer_type = order['feteer_type']
+        feteer_counts[feteer_type] = feteer_counts.get(feteer_type, 0) + 1
         
         # Customer counts
         customer = order['customer_name']
         customer_counts[customer] = customer_counts.get(customer, 0) + 1
-        
-        # Extra shots
-        if order['extra_shot']:
-            total_extra_shots += 1
     
     # Calculate averages and insights
-    avg_order_value = total_money / total_drinks if total_drinks > 0 else 0
+    avg_order_value = total_money / total_orders if total_orders > 0 else 0
     
     # Most popular items
-    most_popular_drink = max(drink_counts.items(), key=lambda x: x[1]) if drink_counts else ('None', 0)
-    most_popular_milk = max(milk_counts.items(), key=lambda x: x[1]) if milk_counts else ('None', 0)
-    most_popular_syrup = max(syrup_counts.items(), key=lambda x: x[1]) if syrup_counts else ('None', 0)
+    most_popular_feteer = max(feteer_counts.items(), key=lambda x: x[1]) if feteer_counts else ('None', 0)
     
     # Top customers
     top_customers = sorted(customer_counts.items(), key=lambda x: x[1], reverse=True)[:5]
-    
-    # For backward compatibility, still provide total_lattes and total_coffees
-    total_lattes = drink_counts.get('Latte', 0)
-    total_coffees = drink_counts.get('Coffee', 0)
 
     return render_template(
         'completed.html',
         completed=completed,
-        total_drinks=total_drinks,
-        total_lattes=total_lattes,
-        total_coffees=total_coffees,
+        total_orders=total_orders,
         total_money=total_money,
-        drink_counts=drink_counts,
-        milk_counts=milk_counts,
-        syrup_counts=syrup_counts,
-        foam_counts=foam_counts,
-        temperature_counts=temperature_counts,
+        feteer_counts=feteer_counts,
         customer_counts=customer_counts,
-        total_extra_shots=total_extra_shots,
         avg_order_value=avg_order_value,
-        most_popular_drink=most_popular_drink,
-        most_popular_milk=most_popular_milk,
-        most_popular_syrup=most_popular_syrup,
+        most_popular_feteer=most_popular_feteer,
         top_customers=top_customers
     )
 
@@ -465,14 +389,12 @@ def export_completed_csv():
 
     si = StringIO()
     writer = csv.writer(si)
-    writer.writerow(['ID', 'Customer Name', 'Drink', 'Milk', 'Syrup', 'Foam', 'Temperature', 'Extra Shot', 'Notes', 'Price', 'Created At'])
+    writer.writerow(['ID', 'Customer Name', 'Feteer Type', 'Notes', 'Price', 'Created At'])
 
     for o in completed:
         writer.writerow([
-            o['id'], o['customer_name'], o['drink'], o['milk'],
-            o['syrup'] or '', o['foam'] or '', o['temperature'], 
-            'Yes' if o['extra_shot'] else 'No',
-            o['notes'], f"{o['price']:.2f}", o['created_at']
+            o['id'], o['customer_name'], o['feteer_type'],
+            o['notes'] or '', f"{o['price']:.2f}", o['created_at']
         ])
 
     output = si.getvalue()
@@ -481,7 +403,7 @@ def export_completed_csv():
     return Response(
         output,
         mimetype='text/csv',
-        headers={"Content-Disposition": "attachment; filename=completed_orders.csv"}
+        headers={"Content-Disposition": "attachment; filename=completed_feteer_orders.csv"}
     )
 
 @app.route('/create_label/<int:order_id>')
@@ -510,14 +432,9 @@ def create_label(order_id):
     c.setFont(font_name, font_size)
 
     lines = [
-        f"{order['customer_name']}'s {order['drink']}",
-        f"Milk: {order['milk']}",
-        f"Syrup: {order['syrup'] or 'None'}",
-        f"Foam: {order['foam'] or 'Regular'}",
-        f"Temp: {order['temperature']}"
+        f"{order['customer_name']}'s Feteer",
+        f"Type: {order['feteer_type']}"
     ]
-    if order['extra_shot']:
-        lines.append("+ Extra Shot")
     if order['notes']:
         lines.append(f"Note: {order['notes']}")
 
@@ -538,7 +455,7 @@ def create_label(order_id):
         buffer,
         as_attachment=False,
         mimetype='application/pdf',
-        download_name=f'label_{order_id}.pdf'
+        download_name=f'feteer_label_{order_id}.pdf'
     )
 
 # ---------- Menu Management Routes ----------
@@ -678,4 +595,4 @@ def api_customer_history(customer_name):
 # ---------- Entry Point ----------
 if __name__ == "__main__":
     create_tables()
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host='0.0.0.0', port=5002)

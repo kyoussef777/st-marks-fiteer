@@ -13,7 +13,7 @@ class InputValidator:
     # Define allowed characters for different input types
     CUSTOMER_NAME_PATTERN = re.compile(r'^[a-zA-Z0-9\s\-\.\'\,]{1,100}$')
     SEARCH_PATTERN = re.compile(r'^[a-zA-Z0-9\s\-\.\'\,]{0,100}$')
-    MENU_ITEM_PATTERN = re.compile(r'^[a-zA-Z0-9\s\-\.\'\,\&]{1,50}$')
+    MENU_ITEM_PATTERN = re.compile(r'^[a-zA-Z0-9\s\-\.\'\,\&\(\)]{1,100}$')
     NOTES_PATTERN = re.compile(r'^[a-zA-Z0-9\s\-\.\'\,\!\?\&\(\)]{0,500}$')
     
     # SQL injection patterns to detect
@@ -120,7 +120,7 @@ class InputValidator:
         if not item_name:
             return False, "", "Item name is required"
         
-        sanitized = InputValidator.sanitize_string(item_name, 50)
+        sanitized = InputValidator.sanitize_string(item_name, 100)
         
         if not InputValidator.MENU_ITEM_PATTERN.match(sanitized):
             return False, "", "Item name contains invalid characters"
@@ -203,7 +203,7 @@ class InputValidator:
         Returns:
             tuple: (is_valid, item_type, error_message)
         """
-        valid_types = ['drink', 'milk', 'syrup', 'foam']
+        valid_types = ['feteer_type']
         if item_type not in valid_types:
             return False, None, f"Item type must be one of: {', '.join(valid_types)}"
         return True, item_type, None

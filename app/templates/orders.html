@@ -87,16 +87,11 @@
             <thead>
                 <tr>
                     <th>#</th>
-                    <th>Customer</th>
-                    <th>Drink</th>
-                    <th>Milk</th>
-                    <th>Syrup</th>
-                    <th>Foam</th>
-                    <th>Temp</th>
-                    <th>Extra Shot</th>
+                    <th>Customer | العميل</th>
+                    <th>Feteer Type | نوع الفطير</th>
                     <th>Wait Time</th>
-                    <th>Notes</th>
-                    <th>Status</th>
+                    <th>Notes | ملاحظات</th>
+                    <th>Status | الحالة</th>
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -105,12 +100,12 @@
                 <tr class="order-row {{ order.status }}">
                     <td>{{ order.id }}</td>
                     <td>{{ order.customer_name }}</td>
-                    <td>{{ order.drink }}</td>
-                    <td>{{ order.milk }}</td>
-                    <td>{{ order.syrup or '' }}</td>
-                    <td>{{ order.foam or '' }}</td>
-                    <td>{{ order.temperature }}</td>
-                    <td>{{ 'Yes' if order.extra_shot else 'No' }}</td>
+                    <td>
+                        {{ order.feteer_type }}
+                        {% if order.item_name_arabic %}
+                            <br><small class="text-muted">{{ order.item_name_arabic }}</small>
+                        {% endif %}
+                    </td>
                     <td>
                         {% if order.wait_time_minutes > 0 %}
                             <span class="{% if order.wait_time_minutes > 10 %}text-danger{% elif order.wait_time_minutes > 5 %}text-warning{% else %}text-muted{% endif %}">
@@ -128,19 +123,19 @@
                     </td>
                     <td class="actions">
                         {% if order.status == 'pending' %}
-                        <button class="btn btn-sm btn-primary" onclick="updateStatus({{ order.id }}, 'in_progress')">
+                        <button class="btn btn-sm btn-primary" onclick="updateStatus('{{ order.id }}', 'in_progress')">
                             Start
                         </button>
                         {% endif %}
                         {% if order.status == 'in_progress' %}
-                        <button class="btn btn-sm btn-success" onclick="updateStatus({{ order.id }}, 'completed')">
+                        <button class="btn btn-sm btn-success" onclick="updateStatus('{{ order.id }}', 'completed')">
                             Complete
                         </button>
                         {% endif %}
-                        <button class="btn btn-sm btn-info" onclick="createLabel({{ order.id }})">
+                        <button class="btn btn-sm btn-info" onclick="createLabel('{{ order.id }}')">
                             Print
                         </button>
-                        <button class="btn btn-sm btn-danger" onclick="deleteOrder({{ order.id }})">
+                        <button class="btn btn-sm btn-danger" onclick="deleteOrder('{{ order.id }}')">
                             Delete
                         </button>
                     </td>
@@ -195,13 +190,13 @@ function updateStatusFilter() {
 }
 
 function updateStatus(orderId, newStatus) {
-    fetch(`/update_status/${orderId}`, {
+    fetch('/update_status/' + orderId, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
             'X-CSRFToken': getCookie('csrf_token')
         },
-        body: `status=${newStatus}`
+        body: 'status=' + newStatus
     })
     .then(response => {
         if (response.ok) {
@@ -217,7 +212,7 @@ function updateStatus(orderId, newStatus) {
 }
 
 function createLabel(orderId) {
-    window.open(`/create_label/${orderId}`, '_blank');
+    window.open('/create_label/' + orderId, '_blank');
 }
 
 function deleteOrder(orderId) {
@@ -225,7 +220,7 @@ function deleteOrder(orderId) {
         return;
     }
     
-    fetch(`/delete_order/${orderId}`, {
+    fetch('/delete_order/' + orderId, {
         method: 'POST',
         headers: {
             'X-CSRFToken': getCookie('csrf_token')
