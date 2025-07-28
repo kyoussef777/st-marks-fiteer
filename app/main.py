@@ -402,6 +402,7 @@ def create_label(order_id):
     label_width = 3.5 * inch
     label_height = 1.1 * inch
     c = canvas.Canvas(buffer, pagesize=(label_width, label_height))
+    c.rect(0, 0, label_width, label_height)
 
     logo_path = os.path.join(app.root_path, 'static', 'watermark.png')
     if os.path.exists(logo_path):
