@@ -10,11 +10,11 @@ from flask import request, abort, flash, redirect, url_for
 class InputValidator:
     """Input validation and sanitization utilities."""
     
-    # Define allowed characters for different input types
-    CUSTOMER_NAME_PATTERN = re.compile(r'^[a-zA-Z0-9\s\-\.\'\,]{1,100}$')
-    SEARCH_PATTERN = re.compile(r'^[a-zA-Z0-9\s\-\.\'\,]{0,100}$')
-    MENU_ITEM_PATTERN = re.compile(r'^[a-zA-Z0-9\s\-\.\'\,\&\(\)]{1,100}$')
-    NOTES_PATTERN = re.compile(r'^[a-zA-Z0-9\s\-\.\'\,\!\?\&\(\)]{0,500}$')
+    # Define allowed characters for different input types (including Arabic Unicode range)
+    CUSTOMER_NAME_PATTERN = re.compile(r'^[a-zA-Z0-9\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF\s\-\.\'\,]{1,100}$')
+    SEARCH_PATTERN = re.compile(r'^[a-zA-Z0-9\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF\s\-\.\'\,]{0,100}$')
+    MENU_ITEM_PATTERN = re.compile(r'^[a-zA-Z0-9\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF\s\-\.\'\,\&\(\)]{1,100}$')
+    NOTES_PATTERN = re.compile(r'^[a-zA-Z0-9\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF\s\-\.\'\,\!\?\&\(\)]{0,500}$')
     
     # SQL injection patterns to detect
     SQL_INJECTION_PATTERNS = [

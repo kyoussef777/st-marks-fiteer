@@ -1,28 +1,30 @@
-# HeBrews Coffee POS System
+# St. Marks Fiteer Management System
 
-A modern point-of-sale (POS) system built specifically for coffee shops, featuring order management, customer tracking, analytics, and label printing capabilities.
+A comprehensive point-of-sale (POS) and order management system built specifically for St. Marks Fiteer restaurant, featuring order management, menu configuration, analytics, and label printing capabilities with bilingual support (English/Arabic).
 
 ## Features
 
-- **Order Management**: Create, track, and manage coffee orders with customizable options
-- **Customer Management**: Track customer history and preferences with autocomplete functionality
-- **Menu Configuration**: Dynamic menu management for drinks, milk types, syrups, and foam options
+- **Order Management**: Create, track, and manage feteer orders with customizable meat, cheese, and topping options
+- **Bilingual Support**: Full support for Arabic text in customer names, notes, and menu items
+- **Menu Configuration**: Dynamic menu management for feteer types, meat selections, cheese types, and extra toppings
 - **Order Status Tracking**: Real-time status updates (pending, in-progress, completed)
-- **Analytics Dashboard**: Comprehensive sales analytics and reporting
-- **Label Printing**: Generate PDF labels for orders with custom branding
-- **Data Export**: Export completed orders to CSV format
-- **Authentication**: Secure login system with session management
-- **Responsive Design**: Mobile-friendly interface for tablet and phone use
+- **Analytics Dashboard**: Comprehensive sales analytics, customer insights, and reporting
+- **Label Printing**: Generate detailed PDF labels for orders without images, containing all order specifications
+- **Data Export**: Export completed orders to CSV format for accounting and analysis
+- **Authentication**: Secure login system with session management and CSRF protection
+- **Input Validation**: Robust security with SQL injection prevention and XSS protection
+- **Responsive Design**: Mobile-friendly interface optimized for tablet and phone use
 
 ## Technology Stack
 
-- **Backend**: Flask (Python)
-- **Database**: SQLite3
+- **Backend**: Flask (Python 3.x)
+- **Database**: SQLite3 with secure query handling
 - **Frontend**: HTML5, CSS3, JavaScript (Vanilla)
-- **PDF Generation**: ReportLab
-- **Authentication**: Flask-WTF with CSRF protection
+- **PDF Generation**: ReportLab for order labels
+- **Security**: Flask-WTF with CSRF protection, custom input validation
 - **Containerization**: Docker & Docker Compose
 - **Web Server**: Nginx (production)
+- **Character Support**: Full Unicode support for Arabic text
 
 ## Quick Start
 
@@ -30,13 +32,13 @@ A modern point-of-sale (POS) system built specifically for coffee shops, featuri
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/Chris-LewisI/hebrews-coffee.git
-   cd hebrews-coffee
+   git clone https://github.com/kyoussef777/st-marks-fiteer.git
+   cd st-marks-fiteer
    ```
 
 2. **Set up environment variables**
    ```bash
-   cp .env.example .env
+   cp example.env .env
    # Edit .env with your configuration
    ```
 
@@ -46,16 +48,15 @@ A modern point-of-sale (POS) system built specifically for coffee shops, featuri
    ```
 
 4. **Access the application**
-   - Open your browser to `http://localhost:5000`
+   - Open your browser to `http://localhost:5002`
    - Default login: admin / password123 (configure in .env)
 
 ### Production Deployment
 
-#### Option 1: Standard Deployment (with exposed ports)
 1. **Configure production environment**
    ```bash
-   cp .env.prod.example .env.prod
-   # Edit .env.prod with production settings
+   cp example.env .env
+   # Edit .env with production settings
    ```
 
 2. **Deploy with production compose**
@@ -63,29 +64,9 @@ A modern point-of-sale (POS) system built specifically for coffee shops, featuri
    docker-compose -f docker-compose.prod.yml up -d
    ```
 
-#### Option 2: Cloudflare Tunnel Deployment (Recommended)
-1. **Configure production environment**
-   ```bash
-   cp .env.prod.example .env.prod
-   # Edit .env.prod with production settings
-   ```
-
-2. **Deploy the application stack**
-   ```bash
-   docker-compose -f docker-compose.prod.yml up -d
-   ```
-
-3. **Set up Cloudflare tunnel**
-   - Install cloudflared on your server
-   - Create a tunnel: `cloudflared tunnel create hebrews-coffee`
-   - Copy `cloudflare-tunnel.yml` to `~/.cloudflared/config.yml`
-   - Configure the tunnel to point to `http://localhost:3001` (nginx container)
-   - Set up DNS record: `yoururl.com` → tunnel
-   - Run the tunnel: `cloudflared tunnel run hebrews-coffee`
-
-4. **Access the application**
-   - Public URL: `https://yoururl.com`
-   - The application is secured behind Cloudflare's network
+3. **Access the application**
+   - Production URL will be available on configured port
+   - Ensure proper SSL/TLS configuration for production use
 
 ## Environment Variables
 
@@ -95,100 +76,254 @@ Create a `.env` file with the following variables:
 FLASK_SECRET_KEY=your-secret-key-here
 APP_USERNAME=admin
 APP_PASSWORD=your-secure-password
-DOMAIN=https://yoururl.com.com
+DATABASE_PATH=db.sqlite3
 ```
 
-For production, update `.env.prod` with your specific values.
+## Application Structure
 
-## API Endpoints
+### Core Modules
 
-### Order Management
-- `POST /order` - Create a new order
+#### Main Application (`app/main.py`)
+- Flask application setup and configuration
+- Route definitions for all endpoints
+- Database initialization and management
+- Order processing logic
+- Menu management functionality
+- Label generation system
+
+#### Security Utilities (`app/security_utils.py`)
+- Input validation with Arabic text support
+- SQL injection prevention
+- XSS protection
+- Secure database query handling
+- CSRF token management
+
+### API Endpoints
+
+#### Order Management
+- `POST /order` - Create a new feteer order
 - `POST /update_status/<id>` - Update order status
 - `POST /delete_order/<id>` - Delete an order
-- `GET /create_label/<id>` - Generate PDF label for order
+- `GET /create_label/<id>` - Generate comprehensive PDF label for order
+- `GET /orders` - View and search orders with filtering
+- `GET /in_progress` - View active orders
+- `GET /completed` - View completed orders with analytics
 
-### Menu Management
-- `POST /add_menu_item` - Add new menu item
+#### Menu Management
+- `POST /add_menu_item` - Add new feteer type
 - `POST /update_menu_item/<id>` - Update existing menu item
 - `POST /delete_menu_item/<id>` - Delete menu item
+- `POST /add_meat_type` - Add new meat option
+- `POST /update_meat_type/<id>` - Update meat type
+- `POST /delete_meat_type/<id>` - Delete meat type
+- `POST /add_cheese_type` - Add new cheese option
+- `POST /update_cheese_type/<id>` - Update cheese type
+- `POST /delete_cheese_type/<id>` - Delete cheese type
+- `POST /add_extra_topping` - Add new extra topping
+- `POST /update_extra_topping/<id>` - Update extra topping
+- `POST /delete_extra_topping/<id>` - Delete extra topping
 
-### Analytics API
+#### Analytics API
 - `GET /api/order-count` - Get order counts by status
 - `GET /api/customers` - Get list of all customers
 - `GET /api/customer-history/<name>` - Get customer order history
 
+#### Data Export
+- `GET /export_completed_csv` - Export completed orders to CSV
+
 ## Database Schema
 
 ### Orders Table
-- `id` - Primary key
-- `customer_name` - Customer name
-- `drink` - Selected drink type
-- `milk` - Milk preference
-- `syrup` - Syrup selection (optional)
-- `foam` - Foam preference
-- `temperature` - Hot/Cold preference
-- `extra_shot` - Boolean for extra espresso shot
-- `notes` - Special instructions
-- `status` - Order status (pending/in_progress/completed)
-- `price` - Order total
-- `created_at` - Timestamp
+- `id` - Primary key (INTEGER)
+- `customer_name` - Customer name (TEXT, supports Arabic)
+- `feteer_type` - Selected feteer type (TEXT)
+- `meat_selection` - Comma-separated meat selections (TEXT)
+- `cheese_selection` - Comma-separated cheese selections (TEXT)
+- `has_cheese` - Boolean for cheese inclusion (BOOLEAN)
+- `extra_nutella` - Boolean for extra nutella (BOOLEAN)
+- `notes` - Special instructions (TEXT, supports Arabic)
+- `status` - Order status: pending/in_progress/completed (TEXT)
+- `price` - Order total (REAL)
+- `created_at` - Timestamp (TEXT)
 
 ### Menu Configuration Table
-- `id` - Primary key
-- `item_type` - Type (drink/milk/syrup/foam)
-- `item_name` - Display name
-- `price` - Item price (nullable for non-drink items)
-- `created_at` - Timestamp
+- `id` - Primary key (INTEGER)
+- `item_type` - Type: feteer_type (TEXT)
+- `item_name` - Display name in English (TEXT)
+- `item_name_arabic` - Display name in Arabic (TEXT)
+- `price` - Item price (REAL)
+- `created_at` - Timestamp (TEXT)
 
-## Development Workflow
+### Meat Types Table
+- `id` - Primary key (INTEGER)
+- `name` - Meat name in English (TEXT)
+- `name_arabic` - Meat name in Arabic (TEXT)
+- `price` - Additional price (REAL, default 0)
+- `is_default` - Default selection for mixed meat (BOOLEAN)
+- `created_at` - Timestamp (TEXT)
 
-1. **Make changes** to the codebase
-2. **Update image version** in Dockerfile if needed
-3. **Test locally** using `docker-compose up --build`
-4. **Commit and push** changes to remote branch
-5. **Rebuild image** in production environment (Portainer)
-6. **Reset database** if schema changes: Delete `/opt/appdata/hebrews-pos/sqlite3/db.sqlite3`
-7. **Redeploy stack** in production
+### Cheese Types Table
+- `id` - Primary key (INTEGER)
+- `name` - Cheese name in English (TEXT)
+- `name_arabic` - Cheese name in Arabic (TEXT)
+- `price` - Additional price (REAL, default 0)
+- `created_at` - Timestamp (TEXT)
+
+### Extra Toppings Table
+- `id` - Primary key (INTEGER)
+- `name` - Topping name in English (TEXT)
+- `name_arabic` - Topping name in Arabic (TEXT)
+- `price` - Additional price (REAL, default 0)
+- `feteer_type` - Associated feteer type (TEXT)
+- `created_at` - Timestamp (TEXT)
+
+## Feteer Types and Pricing
+
+### Default Menu Items
+1. **Sweet (Custard and Sugar)** - فطير حلو (كاسترد وسكر) - $8.00
+2. **Mixed Meat** - فطير باللحمة المشكلة - $12.00
+3. **Mixed Cheese** - فطير بالجبنة المشكلة - $10.00
+4. **Feteer Meshaltet (Plain)** - فطير مشلتت - $6.00
+
+### Default Meat Types
+- **Egyptian Sausage** - سجق مصري (Default)
+- **Ground Beef** - لحمة مفرومة (Default)
+- **Pasterma** - بسطرمة (Default)
+- **Chicken** - فراخ
+
+### Default Cheese Types
+- **White Cheese** - جبنة بيضاء
+- **Roumi Cheese** - جبنة رومي
+- **Mozzarella** - موتزاريلا
+- **Feta** - جبنة فيتا
+
+### Extra Toppings
+- **Extra Nutella** - نوتيلا إضافية (+$2.00) - Available for Sweet feteer
+
+## Security Features
+
+### Input Validation
+- **Arabic Text Support**: Full Unicode support for Arabic characters in names and notes
+- **SQL Injection Prevention**: Parameterized queries and input sanitization
+- **XSS Protection**: HTML escaping and content validation
+- **CSRF Protection**: Token-based request validation
+- **Length Limits**: Enforced maximum lengths for all inputs
+
+### Validation Patterns
+- Customer names: English/Arabic letters, numbers, spaces, basic punctuation (max 100 chars)
+- Notes: English/Arabic letters, numbers, spaces, punctuation (max 500 chars)
+- Menu items: English/Arabic letters, numbers, spaces, basic punctuation (max 100 chars)
+- Prices: Numeric validation (0-999.99)
+
+## Label Generation
+
+### Label Features
+- **No Images**: Clean, text-only labels as requested
+- **Comprehensive Information**: All order details included
+- **Organized Sections**: Clear formatting with headers and subsections
+- **Order Specifications**: Detailed meat/cheese selections for mixed orders
+- **Extra Toppings**: Clear indication of additional items and pricing
+- **Special Notes**: Customer notes with text wrapping
+- **Order Metadata**: Status, creation time, and order ID
+
+### Label Content Structure
+1. **Header**: Order ID and customer name
+2. **Basic Info**: Feteer type and total price
+3. **Specifications**: Detailed meat/cheese selections (for applicable orders)
+4. **Extra Toppings**: Additional items with pricing
+5. **Special Notes**: Customer instructions
+6. **Order Info**: Status and timestamp
 
 ## File Structure
 
 ```
-hebrews-coffee/
+st-marks-fiteer/
 ├── app/
 │   ├── main.py                   # Main Flask application
+│   ├── security_utils.py         # Security and validation utilities
 │   ├── static/
 │   │   ├── styles.css            # Main stylesheet
-│   │   ├── logo.png              # Company logo
-│   │   ├── watermark.png         # Label watermark
+│   │   ├── logo.png              # Restaurant logo
+│   │   ├── watermark.png         # Label watermark (not used in current labels)
 │   │   └── js/
 │   │       ├── chart.js                  # Analytics charts
-│   │       ├── customer-autocomplete.js # Customer search/autocomplete
-│   │       ├── menu-editor.js           # Menu management UI
-│   │       ├── order-management.js      # Admin order tools
-│   │       └── refresh.js               # Auto-refresh logic
+│   │       ├── customer-autocomplete.js # Customer search functionality
+│   │       ├── menu-editor.js           # Menu management interface
+│   │       ├── order-management.js      # Order management tools
+│   │       └── refresh.js               # Auto-refresh functionality
 │   └── templates/
-│       ├── base.html            # Base template
-│       ├── index.html           # Main order interface
-│       ├── orders.html          # Order management
-│       ├── in_progress.html     # Active orders
-│       ├── completed.html       # Analytics dashboard
-│       └── login.html           # Authentication
-├── .env                         # Local environment variables
+│       ├── base.html            # Base template with navigation
+│       ├── index.html           # Main order creation interface
+│       ├── orders.html          # Order management and search
+│       ├── in_progress.html     # Active orders display
+│       ├── completed.html       # Analytics and completed orders
+│       └── login.html           # Authentication interface
+├── .env                         # Environment variables (create from example.env)
 ├── .gitignore                   # Git ignored files and folders
-├── cleanup-and-rebuild.sh       # Utility script for Docker cleanup
+├── cleanup-and-rebuild.sh       # Docker cleanup utility script
 ├── docker-compose.yml           # Development Docker Compose config
 ├── docker-compose.prod.yml      # Production Docker Compose config
 ├── Dockerfile                   # Development Dockerfile
 ├── Dockerfile.prod              # Production Dockerfile
-├── example.env                  # Sample environment config
+├── example.env                  # Sample environment configuration
 ├── LICENSE                      # Project license
-├── nginx.conf                   # Nginx config for deployment
+├── nginx.conf                   # Nginx configuration for production
 ├── nginx.conf.template          # Template for dynamic Nginx config
-├── README.md                    # Project overview and usage
-├── README-PRODUCTION.md         # Production setup documentation
+├── README.md                    # This documentation
+├── README-PRODUCTION.md         # Production deployment guide
 └── requirements.txt             # Python dependencies
 ```
+
+## Development Workflow
+
+1. **Make changes** to the codebase
+2. **Test locally** using `docker-compose up --build`
+3. **Validate security** - ensure input validation works with Arabic text
+4. **Test label generation** - verify all order information appears correctly
+5. **Commit and push** changes to repository
+6. **Deploy to production** using production Docker Compose
+
+## Common Development Tasks
+
+### Adding New Feteer Types
+1. Add entry to `menu_config` table via admin interface
+2. Update any specific logic in order processing if needed
+3. Test order creation and label generation
+
+### Adding New Meat/Cheese Types
+1. Use the admin interface to add new types
+2. Include both English and Arabic names
+3. Set appropriate pricing if applicable
+
+### Modifying Label Format
+1. Edit the `create_label` function in `main.py`
+2. Adjust layout, fonts, or content sections
+3. Test with various order types to ensure proper formatting
+
+### Updating Input Validation
+1. Modify patterns in `security_utils.py`
+2. Test with both English and Arabic text
+3. Ensure security measures remain intact
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Arabic Text Not Displaying**
+   - Ensure UTF-8 encoding in database and application
+   - Verify Unicode support in PDF generation
+
+2. **Label Generation Errors**
+   - Check ReportLab installation and dependencies
+   - Verify order data completeness
+
+3. **Database Connection Issues**
+   - Check DATABASE_PATH environment variable
+   - Ensure proper file permissions for SQLite database
+
+4. **Authentication Problems**
+   - Verify APP_USERNAME and APP_PASSWORD in .env
+   - Check session configuration and secret key
 
 ## Contributing
 
@@ -204,4 +339,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Support
 
-For support and questions, please open an issue on the GitHub repository.
+For support and questions, please open an issue on the GitHub repository or contact the development team.

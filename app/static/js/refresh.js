@@ -2,10 +2,19 @@ function refreshOrders() {
   fetch('/in_progress')
     .then(response => response.text())
     .then(html => {
-      document.querySelector('.pending-orders').innerHTML = `
-        <h3>In Progress Orders</h3>
-        ${html}
-      `;
+      const ordersContent = document.querySelector('.orders-content');
+      if (ordersContent) {
+        ordersContent.innerHTML = html;
+      } else {
+        // Fallback for legacy design
+        const pendingOrders = document.querySelector('.pending-orders');
+        if (pendingOrders) {
+          pendingOrders.innerHTML = `
+            <h3>In Progress Orders</h3>
+            ${html}
+          `;
+        }
+      }
     })
     .catch(err => console.error('Error refreshing orders:', err));
 }

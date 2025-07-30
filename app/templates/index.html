@@ -3,44 +3,71 @@
 {% block title %}St. Mark's Feteer{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between mb-3">
-  <button id="editMenuBtn" class="btn btn-outline-secondary btn-sm">
-    ✏️ Edit Menu
-  </button>
-  <a href="{{ url_for('completed_orders') }}" class="btn btn-outline-success btn-sm">
-    ✔️ View Completed Orders
-  </a>
+<!-- Header Section -->
+<div class="modern-header">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="header-actions">
+      <button id="editMenuBtn" class="btn btn-modern btn-secondary">
+        <i class="icon">⚙️</i>
+        <span class="btn-text">Edit Menu</span>
+      </button>
+      <a href="{{ url_for('completed_orders') }}" class="btn btn-modern btn-success">
+        <i class="icon">📊</i>
+        <span class="btn-text">Analytics</span>
+      </a>
+    </div>
+  </div>
 </div>
 
-<h1 class="mb-4">St. Mark's Feteer | فطير كنيسة مارمرقس</h1>
+<!-- Order Form -->
+<div class="order-form-container">
+  <form action="{{ url_for('order') }}" method="post" class="modern-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    
+    <!-- Basic Order Information -->
+    <div class="form-section">
+      <h3 class="section-title">
+        <span class="section-icon">👤</span>
+        Order Information
+        <span class="section-title-ar">معلومات الطلب</span>
+      </h3>
+      
+      <div class="row g-4">
+        <div class="col-lg-6">
+          <div class="form-group-modern">
+            <label for="customer_name" class="form-label-modern">
+              Customer Name
+              <span class="label-ar">اسم العميل</span>
+            </label>
+            <div class="input-wrapper">
+              <input type="text" name="customer_name" id="customer_name" 
+                     class="form-control-modern" placeholder="Enter customer name" required>
+              <div class="input-icon">👤</div>
+            </div>
+          </div>
+        </div>
 
-<form action="{{ url_for('order') }}" method="post" class="mb-4">
-  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-  <div class="row g-3 align-items-end">
-
-    <div class="col-md-4">
-      <label for="customer_name" class="form-label">
-        Customer Name | اسم العميل
-      </label>
-      <input type="text" name="customer_name" id="customer_name" class="form-control" placeholder="Customer Name" required autocomplete="off">
-      <div id="customer-suggestions" class="dropdown-menu" style="display: none;"></div>
-    </div>
-
-    <div class="col-md-6">
-      <label for="feteer_type" class="form-label">
-        Feteer Type | نوع الفطير
-        <span id="editFeteerIcon" class="edit-icon" style="display: none;">✏️</span>
-      </label>
-      <div id="feteerSelectContainer">
-        <select name="feteer_type" id="feteer_type" class="form-select" required>
-          <option value="">Select a feteer type | اختر نوع الفطير</option>
-          {% for feteer in feteer_types %}
-          <option value="{{ feteer.item_name }}">
-            {{ feteer.item_name }} | {{ feteer.item_name_arabic }} (${{ "%.2f"|format(feteer.price) }})
-          </option>
-          {% endfor %}
-        </select>
-      </div>
+        <div class="col-lg-6">
+          <div class="form-group-modern">
+            <label for="feteer_type" class="form-label-modern">
+              Feteer Type
+              <span class="label-ar">نوع الفطير</span>
+              <span id="editFeteerIcon" class="edit-icon" style="display: none;">⚙️</span>
+            </label>
+            <div id="feteerSelectContainer">
+              <div class="select-wrapper">
+                <select name="feteer_type" id="feteer_type" class="form-select-modern" required onchange="handleFeteerTypeChange()">
+                  <option value="">Choose your feteer | اختر فطيرك</option>
+                  {% for feteer in feteer_types %}
+                  <option value="{{ feteer.item_name }}">
+                    {{ feteer.item_name }} | {{ feteer.item_name_arabic }} 
+                    <span class="price-tag">${{ "%.2f"|format(feteer.price) }}</span>
+                  </option>
+                  {% endfor %}
+                </select>
+                <div class="select-icon">🥞</div>
+              </div>
+            </div>
       <div id="feteerEditContainer" style="display: none;">
         {% for feteer in feteer_types %}
         <div class="edit-item mb-2" data-id="{{ feteer.id }}" data-type="feteer_type">
@@ -64,24 +91,352 @@
       </div>
     </div>
 
-    <div class="col-md-12 mt-3">
-      <label for="notes" class="form-label">Notes | ملاحظات</label>
-      <input type="text" name="notes" id="notes" class="form-control" placeholder="Special instructions | تعليمات خاصة">
+    <!-- Mixed Meat Selection -->
+    <div class="form-section" id="meatSelectionContainer" style="display: none;">
+      <h3 class="section-title">
+        Mixed Meat Configuration
+        <span class="section-title-ar">إعداد اللحمة المشكلة</span>
+      </h3>
+      
+      <!-- Cheese Option -->
+      <div class="choice-section">
+        <h4 class="choice-title">
+          <span class="choice-icon">🧀</span>
+          Cheese Option
+          <span class="choice-title-ar">خيار الجبنة</span>
+        </h4>
+        <div class="choice-grid">
+          <div class="choice-card active">
+            <input type="radio" name="has_cheese" id="with_cheese" value="true" checked>
+            <label for="with_cheese" class="choice-label">
+              <div class="choice-content">
+                <span class="choice-emoji">✅</span>
+                <span class="choice-text">With Cheese</span>
+                <span class="choice-text-ar">مع الجبنة</span>
+              </div>
+            </label>
+          </div>
+          <div class="choice-card">
+            <input type="radio" name="has_cheese" id="no_cheese" value="false">
+            <label for="no_cheese" class="choice-label">
+              <div class="choice-content">
+                <span class="choice-emoji">❌</span>
+                <span class="choice-text">No Cheese</span>
+                <span class="choice-text-ar">بدون جبنة</span>
+              </div>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Meat Selection -->
+      <div class="selection-section">
+        <h4 class="selection-title">
+          Select Up to 2 Meats
+          <span class="selection-title-ar">اختر حتى لحمتين</span>
+          <span class="required-badge">Required</span>
+        </h4>
+        <div class="selection-grid">
+          {% for meat in meat_types %}
+          <div class="selection-item">
+            <input type="checkbox" name="meat_selection" value="{{ meat.name }}" 
+                   id="meat_{{ meat.id }}" class="meat-checkbox" onchange="handleMeatSelection()">
+            <label for="meat_{{ meat.id }}" class="selection-label">
+              <div class="selection-content">
+                <span class="selection-text">{{ meat.name }}</span>
+                <span class="selection-text-ar">{{ meat.name_arabic }}</span>
+              </div>
+            </label>
+          </div>
+          {% endfor %}
+        </div>
+        <div class="selection-info" id="meatSelectionInfo">
+          Please select 1-2 meats | يرجى اختيار 1-2 لحوم
+        </div>
+      </div>
+
+      <!-- Additional Meats -->
+      <div class="selection-section premium" id="additionalMeatsSection" style="display: none;">
+        <h4 class="selection-title">
+          Additional Meats
+          <span class="selection-title-ar">لحوم إضافية</span>
+          <span class="price-badge">+$2.00 each</span>
+        </h4>
+        <div class="selection-grid">
+          {% for meat in meat_types %}
+          <div class="selection-item premium">
+            <input type="checkbox" name="additional_meat_selection" value="{{ meat.name }}" 
+                   id="additional_meat_{{ meat.id }}" class="additional-meat-checkbox">
+            <label for="additional_meat_{{ meat.id }}" class="selection-label">
+              <div class="selection-content">
+                <span class="selection-text">{{ meat.name }}</span>
+                <span class="selection-text-ar">{{ meat.name_arabic }}</span>
+                <span class="premium-price">+$2.00</span>
+              </div>
+            </label>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
     </div>
 
-  </div>
+    <!-- Extra Toppings -->
+    <div class="form-section" id="extraToppingsContainer" style="display: none;">
+      <h3 class="section-title">
+        <span class="section-icon">🍯</span>
+        Extra Toppings
+        <span class="section-title-ar">إضافات</span>
+      </h3>
+      
+      <div class="selection-grid">
+        {% for topping in extra_toppings %}
+        <div class="selection-item premium">
+          <input type="checkbox" name="extra_nutella" id="topping_{{ topping.id }}"
+                 data-feteer-type="{{ topping.feteer_type }}">
+          <label for="topping_{{ topping.id }}" class="selection-label">
+            <div class="selection-content">
+              <span class="selection-text">{{ topping.name }}</span>
+              <span class="selection-text-ar">{{ topping.name_arabic }}</span>
+              {% if topping.price > 0 %}
+              <span class="premium-price">+${{ "%.2f"|format(topping.price) }}</span>
+              {% endif %}
+            </div>
+          </label>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
 
-  <div class="mt-3">
-    <button class="btn btn-primary" type="submit">Place Order | اطلب الآن</button>
-  </div>
-</form>
+    <!-- Notes Section -->
+    <div class="form-section">
+      <h3 class="section-title">
+        Special Notes
+        <span class="section-title-ar">ملاحظات خاصة</span>
+      </h3>
+      
+      <div class="form-group-modern">
+        <div class="input-wrapper">
+          <textarea name="notes" id="notes" class="form-control-modern textarea" 
+                    placeholder="Any special instructions or requests..." rows="3"></textarea>
+          <div class="input-icon">💬</div>
+        </div>
+      </div>
+    </div>
 
-<div class="pending-orders">
-  <h3>In Progress Orders | الطلبات قيد التحضير</h3>
-  <!-- Orders will be loaded here by refresh.js -->
+    <!-- Submit Button -->
+    <div class="submit-section">
+      <button type="submit" class="btn-submit" id="submitButton">
+        <span class="btn-submit-icon">🍽️</span>
+        <span class="btn-submit-text">
+          <span class="btn-submit-main">Place Order</span>
+          <span class="btn-submit-price" id="totalPrice">$0.00</span>
+          <span class="btn-submit-ar">اطلب الآن</span>
+        </span>
+        <span class="btn-submit-arrow">→</span>
+      </button>
+    </div>
+  </form>
 </div>
+
+<!-- In Progress Orders -->
+<div class="orders-section">
+  <div class="orders-header">
+    <h3 class="orders-title">
+      <span class="orders-icon">⏳</span>
+      In Progress Orders
+      <span class="orders-title-ar">الطلبات قيد التحضير</span>
+    </h3>
+  </div>
+  <div class="orders-content">
+    <!-- Orders will be loaded here by refresh.js -->
+  </div>
+</div>
+
+<script>
+function handleFeteerTypeChange() {
+    const feteerType = document.getElementById('feteer_type').value;
+    const meatContainer = document.getElementById('meatSelectionContainer');
+    const toppingsContainer = document.getElementById('extraToppingsContainer');
+    
+    // Hide all containers first
+    meatContainer.style.display = 'none';
+    toppingsContainer.style.display = 'none';
+    
+    // Show appropriate containers based on feteer type
+    if (feteerType === 'Mixed Meat') {
+        meatContainer.style.display = 'block';
+        // Reset meat selections when switching to mixed meat
+        handleMeatSelection();
+    } else if (feteerType === 'Sweet (Custard and Sugar)') {
+        toppingsContainer.style.display = 'block';
+    }
+    
+    // Show/hide extra toppings based on feteer type
+    const toppingCheckboxes = document.querySelectorAll('#extraToppingsContainer input[type="checkbox"]');
+    toppingCheckboxes.forEach(checkbox => {
+        const toppingFeteerType = checkbox.getAttribute('data-feteer-type');
+        const parentDiv = checkbox.closest('.selection-item');
+        if (toppingFeteerType === feteerType) {
+            parentDiv.style.display = 'block';
+        } else {
+            parentDiv.style.display = 'none';
+            checkbox.checked = false; // Uncheck if hidden
+        }
+    });
+    
+    // Update price after changing feteer type
+    updateTotalPrice();
+}
+
+function handleMeatSelection() {
+    const meatCheckboxes = document.querySelectorAll('.meat-checkbox');
+    const additionalMeatsSection = document.getElementById('additionalMeatsSection');
+    const meatSelectionInfo = document.getElementById('meatSelectionInfo');
+    const additionalMeatCheckboxes = document.querySelectorAll('.additional-meat-checkbox');
+    
+    // Count selected meats
+    const selectedMeats = Array.from(meatCheckboxes).filter(cb => cb.checked);
+    const selectedCount = selectedMeats.length;
+    
+    // Update info text and styling
+    if (selectedCount === 0) {
+        meatSelectionInfo.textContent = 'Please select 1-2 meats | يرجى اختيار 1-2 لحوم';
+        meatSelectionInfo.className = 'text-danger';
+    } else if (selectedCount === 1) {
+        meatSelectionInfo.textContent = 'You can select 1 more meat | يمكنك اختيار لحمة واحدة أخرى';
+        meatSelectionInfo.className = 'text-info';
+    } else if (selectedCount === 2) {
+        meatSelectionInfo.textContent = 'Perfect! You can add more meats below for extra cost | ممتاز! يمكنك إضافة المزيد من اللحوم أدناه بتكلفة إضافية';
+        meatSelectionInfo.className = 'text-success';
+    } else {
+        // More than 2 selected - shouldn't happen with proper validation
+        meatSelectionInfo.textContent = 'Maximum 2 meats allowed here | الحد الأقصى لحمتين هنا';
+        meatSelectionInfo.className = 'text-danger';
+    }
+    
+    // Show/hide additional meats section
+    if (selectedCount >= 2) {
+        additionalMeatsSection.style.display = 'block';
+    } else {
+        additionalMeatsSection.style.display = 'none';
+        // Clear additional meat selections when hiding
+        additionalMeatCheckboxes.forEach(cb => cb.checked = false);
+    }
+    
+    // Disable/enable meat checkboxes based on selection count
+    meatCheckboxes.forEach(checkbox => {
+        if (selectedCount >= 2 && !checkbox.checked) {
+            checkbox.disabled = true;
+        } else {
+            checkbox.disabled = false;
+        }
+    });
+    
+    // Keep all additional meat options available (don't disable any)
+    additionalMeatCheckboxes.forEach(checkbox => {
+        checkbox.disabled = false;
+    });
+    
+    // Update price after meat selection changes
+    updateTotalPrice();
+}
+
+// Price calculation functionality
+function calculateTotalPrice() {
+    let total = 0;
+    
+    // Get base feteer price from the select option text
+    const feteerSelect = document.getElementById('feteer_type');
+    const selectedOption = feteerSelect.options[feteerSelect.selectedIndex];
+    if (selectedOption && selectedOption.value) {
+        // Extract price from option text (format: "Name | Arabic Name $X.XX")
+        const optionText = selectedOption.textContent;
+        const priceMatch = optionText.match(/\$(\d+\.\d+)/);
+        if (priceMatch) {
+            total += parseFloat(priceMatch[1]);
+        }
+    }
+    
+    // Add additional meat costs (+$2.00 each)
+    const additionalMeats = document.querySelectorAll('.additional-meat-checkbox:checked');
+    total += additionalMeats.length * 2.0;
+    
+    // Add extra toppings costs
+    const extraToppings = document.querySelectorAll('#extraToppingsContainer input[type="checkbox"]:checked');
+    extraToppings.forEach(topping => {
+        // Extra Nutella costs $2.00
+        total += 2.0;
+    });
+    
+    return total;
+}
+
+function updateTotalPrice() {
+    const total = calculateTotalPrice();
+    const totalPriceElement = document.getElementById('totalPrice');
+    const submitButton = document.getElementById('submitButton');
+    
+    if (total > 0) {
+        totalPriceElement.textContent = `$${total.toFixed(2)}`;
+        submitButton.disabled = false;
+        submitButton.style.opacity = '1';
+    } else {
+        totalPriceElement.textContent = '$0.00';
+        submitButton.disabled = true;
+        submitButton.style.opacity = '0.6';
+    }
+}
+
+// Handle cheese selection visual updates
+function handleCheeseSelection() {
+    const cheeseRadios = document.querySelectorAll('input[name="has_cheese"]');
+    cheeseRadios.forEach(radio => {
+        const card = radio.closest('.choice-card');
+        if (radio.checked) {
+            card.classList.add('active');
+        } else {
+            card.classList.remove('active');
+        }
+    });
+}
+
+// Add event listeners for price updates
+function addPriceUpdateListeners() {
+    // Feteer type change
+    document.getElementById('feteer_type').addEventListener('change', updateTotalPrice);
+    
+    // Cheese option change
+    document.querySelectorAll('input[name="has_cheese"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            handleCheeseSelection();
+            updateTotalPrice();
+        });
+    });
+    
+    // Meat selection change
+    document.querySelectorAll('.meat-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', updateTotalPrice);
+    });
+    
+    // Additional meat selection change
+    document.querySelectorAll('.additional-meat-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', updateTotalPrice);
+    });
+    
+    // Extra toppings change
+    document.querySelectorAll('#extraToppingsContainer input[type="checkbox"]').forEach(checkbox => {
+        checkbox.addEventListener('change', updateTotalPrice);
+    });
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    handleFeteerTypeChange();
+    addPriceUpdateListeners();
+    updateTotalPrice();
+});
+</script>
 
 <script src="{{ url_for('static', filename='js/refresh.js') }}"></script>
 <script src="{{ url_for('static', filename='js/menu-editor.js') }}"></script>
-<script src="{{ url_for('static', filename='js/customer-autocomplete.js') }}"></script>
 {% endblock %}

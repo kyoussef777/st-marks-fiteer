@@ -54,6 +54,20 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="{{ url_for('static', filename='js/order-management.js') }}"></script>
+<script>
+// Global function for creating labels with auto-print
+function createLabel(orderId) {
+    // Open the PDF in a new window
+    const printWindow = window.open('/create_label/' + orderId, '_blank');
+    
+    // Wait for the PDF to load, then trigger print
+    printWindow.onload = function() {
+        setTimeout(function() {
+            printWindow.print();
+        }, 1000); // Wait 1 second for PDF to fully render
+    };
+}
+</script>
 {% block scripts %}{% endblock %}
 </body>
 </html>

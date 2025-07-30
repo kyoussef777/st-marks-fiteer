@@ -61,17 +61,44 @@ def create_tables():
             open(DATABASE, 'a').close()
         
         db = sqlite3.connect(DATABASE)
+        
+        # Create orders table with new fields
         db.execute("""
             CREATE TABLE IF NOT EXISTS orders (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 customer_name TEXT NOT NULL,
                 feteer_type TEXT NOT NULL,
+                meat_selection TEXT,
+                cheese_selection TEXT,
+                has_cheese BOOLEAN DEFAULT 1,
+                extra_nutella BOOLEAN DEFAULT 0,
                 notes TEXT,
                 status TEXT NOT NULL,
                 price REAL NOT NULL,
                 created_at TEXT NOT NULL
             )
         """)
+        
+        # Add new columns to existing orders table if they don't exist
+        try:
+            db.execute("ALTER TABLE orders ADD COLUMN meat_selection TEXT")
+        except sqlite3.OperationalError:
+            pass  # Column already exists
+        
+        try:
+            db.execute("ALTER TABLE orders ADD COLUMN cheese_selection TEXT")
+        except sqlite3.OperationalError:
+            pass  # Column already exists
+            
+        try:
+            db.execute("ALTER TABLE orders ADD COLUMN has_cheese BOOLEAN DEFAULT 1")
+        except sqlite3.OperationalError:
+            pass  # Column already exists
+            
+        try:
+            db.execute("ALTER TABLE orders ADD COLUMN extra_nutella BOOLEAN DEFAULT 0")
+        except sqlite3.OperationalError:
+            pass  # Column already exists
         
         # Create menu configuration table
         db.execute("""
@@ -81,6 +108,41 @@ def create_tables():
                 item_name TEXT NOT NULL,
                 item_name_arabic TEXT,
                 price REAL,
+                created_at TEXT NOT NULL
+            )
+        """)
+        
+        # Create meat types table
+        db.execute("""
+            CREATE TABLE IF NOT EXISTS meat_types (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                name_arabic TEXT,
+                price REAL DEFAULT 0,
+                is_default BOOLEAN DEFAULT 0,
+                created_at TEXT NOT NULL
+            )
+        """)
+        
+        # Create cheese types table
+        db.execute("""
+            CREATE TABLE IF NOT EXISTS cheese_types (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                name_arabic TEXT,
+                price REAL DEFAULT 0,
+                created_at TEXT NOT NULL
+            )
+        """)
+        
+        # Create extra toppings table
+        db.execute("""
+            CREATE TABLE IF NOT EXISTS extra_toppings (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                name_arabic TEXT,
+                price REAL DEFAULT 0,
+                feteer_type TEXT,
                 created_at TEXT NOT NULL
             )
         """)
@@ -98,6 +160,48 @@ def create_tables():
                 db.execute(
                     "INSERT INTO menu_config (item_type, item_name, item_name_arabic, price, created_at) VALUES (?, ?, ?, ?, datetime('now'))",
                     (item_type, item_name, item_name_arabic, price)
+                )
+        
+        # Insert default meat types if table is empty
+        existing_meats = db.execute("SELECT COUNT(*) FROM meat_types").fetchone()[0]
+        if existing_meats == 0:
+            default_meats = [
+                ('Egyptian Sausage', 'سجق مصري', 0, 1),
+                ('Ground Beef', 'لحمة مفرومة', 0, 1),
+                ('Pasterma', 'بسطرمة', 0, 1),
+                ('Chicken', 'فراخ', 0, 0)
+            ]
+            for name, name_arabic, price, is_default in default_meats:
+                db.execute(
+                    "INSERT INTO meat_types (name, name_arabic, price, is_default, created_at) VALUES (?, ?, ?, ?, datetime('now'))",
+                    (name, name_arabic, price, is_default)
+                )
+        
+        # Insert default cheese types if table is empty
+        existing_cheese = db.execute("SELECT COUNT(*) FROM cheese_types").fetchone()[0]
+        if existing_cheese == 0:
+            default_cheese = [
+                ('White Cheese', 'جبنة بيضاء', 0),
+                ('Roumi Cheese', 'جبنة رومي', 0),
+                ('Mozzarella', 'موتزاريلا', 0),
+                ('Feta', 'جبنة فيتا', 0)
+            ]
+            for name, name_arabic, price in default_cheese:
+                db.execute(
+                    "INSERT INTO cheese_types (name, name_arabic, price, created_at) VALUES (?, ?, ?, datetime('now'))",
+                    (name, name_arabic, price)
+                )
+        
+        # Insert default extra toppings if table is empty
+        existing_toppings = db.execute("SELECT COUNT(*) FROM extra_toppings").fetchone()[0]
+        if existing_toppings == 0:
+            default_toppings = [
+                ('Extra Nutella', 'نوتيلا إضافية', 2.0, 'Sweet (Custard and Sugar)')
+            ]
+            for name, name_arabic, price, feteer_type in default_toppings:
+                db.execute(
+                    "INSERT INTO extra_toppings (name, name_arabic, price, feteer_type, created_at) VALUES (?, ?, ?, ?, datetime('now'))",
+                    (name, name_arabic, price, feteer_type)
                 )
         
         db.commit()
@@ -166,7 +270,15 @@ def index():
     db = get_db()
     orders = db.execute('SELECT * FROM orders ORDER BY created_at DESC').fetchall()
     feteer_types = db.execute('SELECT * FROM menu_config WHERE item_type = "feteer_type" ORDER BY item_name').fetchall()
-    return render_template('index.html', orders=orders, feteer_types=feteer_types)
+    meat_types = db.execute('SELECT * FROM meat_types ORDER BY name').fetchall()
+    cheese_types = db.execute('SELECT * FROM cheese_types ORDER BY name').fetchall()
+    extra_toppings = db.execute('SELECT * FROM extra_toppings ORDER BY name').fetchall()
+    return render_template('index.html', 
+                         orders=orders, 
+                         feteer_types=feteer_types,
+                         meat_types=meat_types,
+                         cheese_types=cheese_types,
+                         extra_toppings=extra_toppings)
 
 @app.route('/in_progress')
 @login_required
@@ -188,6 +300,12 @@ def order():
     customer_name = request.form['customer_name']
     feteer_type = request.form['feteer_type']
     notes = request.form.get('notes', '')
+    
+    # New fields
+    meat_selection = request.form.getlist('meat_selection')
+    additional_meat_selection = request.form.getlist('additional_meat_selection')
+    has_cheese = request.form.get('has_cheese') == 'true'  # Changed from 'on' to 'true'
+    extra_nutella = request.form.get('extra_nutella') == 'on'
 
     # Validate customer name
     is_valid, sanitized_name, error = InputValidator.validate_customer_name(customer_name)
@@ -207,23 +325,51 @@ def order():
         flash(f"Invalid notes: {error}")
         return redirect(url_for('index'))
 
+    # Validate mixed meat selections
+    if feteer_type == 'Mixed Meat':
+        if not meat_selection or len(meat_selection) == 0:
+            flash("Please select at least 1 meat for Mixed Meat feteer")
+            return redirect(url_for('index'))
+        if len(meat_selection) > 2:
+            flash("Please select maximum 2 meats in the main selection")
+            return redirect(url_for('index'))
+
     db = get_db()
     
-    # Get price from database
+    # Get base price from database
     feteer_price = db.execute(
         'SELECT price FROM menu_config WHERE item_type = "feteer_type" AND item_name = ?', 
         (feteer_type,)
     ).fetchone()
     
     price = feteer_price['price'] if feteer_price and feteer_price['price'] else 0.0
+    
+    # Calculate additional costs
+    # For mixed meat: charge extra for additional meats
+    if feteer_type == 'Mixed Meat' and additional_meat_selection:
+        additional_meat_count = len(additional_meat_selection)
+        price += additional_meat_count * 2.0  # $2 per additional meat
+    
+    # For extra nutella
+    if extra_nutella:
+        extra_toppings = db.execute(
+            'SELECT price FROM extra_toppings WHERE name = "Extra Nutella" AND feteer_type = ?',
+            (feteer_type,)
+        ).fetchone()
+        if extra_toppings:
+            price += extra_toppings['price']
+    
+    # Combine meat selections for storage
+    all_meats = meat_selection + additional_meat_selection
+    meat_selection_str = ','.join(all_meats) if all_meats else None
 
     db.execute(
         '''
         INSERT INTO orders 
-        (customer_name, feteer_type, notes, status, price, created_at) 
-        VALUES (?, ?, ?, ?, ?, datetime("now"))
+        (customer_name, feteer_type, meat_selection, cheese_selection, has_cheese, extra_nutella, notes, status, price, created_at) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime("now"))
         ''',
-        (sanitized_name, feteer_type, sanitized_notes, 'pending', price)
+        (sanitized_name, feteer_type, meat_selection_str, None, has_cheese, extra_nutella, sanitized_notes, 'pending', price)
     )
     db.commit()
     return redirect(url_for('index'))
@@ -389,12 +535,24 @@ def export_completed_csv():
 
     si = StringIO()
     writer = csv.writer(si)
-    writer.writerow(['ID', 'Customer Name', 'Feteer Type', 'Notes', 'Price', 'Created At'])
+    writer.writerow([
+        'ID', 'Customer Name', 'Feteer Type', 'Meat Selection', 'Cheese Selection', 
+        'Has Cheese', 'Extra Nutella', 'Notes', 'Status', 'Price', 'Created At'
+    ])
 
     for o in completed:
         writer.writerow([
-            o['id'], o['customer_name'], o['feteer_type'],
-            o['notes'] or '', f"{o['price']:.2f}", o['created_at']
+            o['id'], 
+            o['customer_name'], 
+            o['feteer_type'],
+            o['meat_selection'] or '',
+            o['cheese_selection'] or '',
+            'Yes' if o['has_cheese'] else 'No',
+            'Yes' if o['extra_nutella'] else 'No',
+            o['notes'] or '', 
+            o['status'],
+            f"{o['price']:.2f}", 
+            o['created_at']
         ])
 
     output = si.getvalue()
@@ -416,47 +574,107 @@ def create_label(order_id):
         return "Order not found", 404
 
     buffer = io.BytesIO()
-    label_width = 3 * inch
-    label_height = 3 * inch
+    label_width = 4.5 * inch  # Increased width for more content
+    label_height = 6 * inch   # Increased height for more content
     c = canvas.Canvas(buffer, pagesize=(label_width, label_height))
 
-    logo_path = os.path.join(app.root_path, 'static', 'watermark.png')
-    if os.path.exists(logo_path):
-        logo_size = 1.5 * inch
-        logo_x = (label_width - logo_size) / 2
-        logo_y = (label_height - logo_size) / 2
-        c.drawImage(logo_path, logo_x, logo_y, width=logo_size, height=logo_size, preserveAspectRatio=True, mask='auto')
-
-    font_name = "Helvetica-Bold"
-    font_size = 16
-    c.setFont(font_name, font_size)
-
-    lines = [
-        f"{order['customer_name']}'s Feteer",
-        f"Type: {order['feteer_type']}"
-    ]
-    if order['notes']:
-        lines.append(f"Note: {order['notes']}")
-
-    line_height = font_size + 2
-    total_text_height = line_height * len(lines)
-    y_start = (label_height + total_text_height) / 2 - line_height
-
-    y = y_start
-    for line in lines:
-        c.drawCentredString(label_width / 2, y, line)
+    # Use different font sizes for different sections
+    title_font = "Helvetica-Bold"
+    content_font = "Helvetica"
+    
+    # Customer name (main title)
+    c.setFont(title_font, 16)
+    customer_y = label_height - 0.5 * inch
+    c.drawString(0.2 * inch, customer_y, f"{order['customer_name']}")
+    
+    # Build comprehensive label content
+    c.setFont(content_font, 12)
+    line_height = 16
+    y = customer_y - 0.5 * inch
+    
+    # Feteer type
+    c.setFont(title_font, 14)
+    c.drawString(0.2 * inch, y, f"{order['feteer_type']}")
+    y -= line_height * 1.5
+    
+    # Add detailed order specifications
+    if order['feteer_type'] == 'Mixed Meat':
+        c.setFont(title_font, 12)
+        c.drawString(0.2 * inch, y, "MEAT SPECIFICATIONS:")
         y -= line_height
+        c.setFont(content_font, 11)
+        
+        if order['meat_selection']:
+            meat_list = order['meat_selection'].replace(',', ', ')
+            c.drawString(0.3 * inch, y, f"Selected Meats: {meat_list}")
+            y -= line_height
+        
+        cheese_status = "With Cheese" if order['has_cheese'] else "NO CHEESE"
+        c.drawString(0.3 * inch, y, f"Cheese: {cheese_status}")
+        y -= line_height * 1.5
+    
+    elif order['feteer_type'] == 'Mixed Cheese':
+        c.setFont(title_font, 12)
+        c.drawString(0.2 * inch, y, "CHEESE SPECIFICATIONS:")
+        y -= line_height
+        c.setFont(content_font, 11)
+        
+        if order['cheese_selection']:
+            cheese_list = order['cheese_selection'].replace(',', ', ')
+            c.drawString(0.3 * inch, y, f"Selected Cheese: {cheese_list}")
+            y -= line_height * 1.5
+    
+    # Add extra toppings
+    if order['extra_nutella']:
+        c.setFont(title_font, 12)
+        c.drawString(0.2 * inch, y, "EXTRA TOPPINGS:")
+        y -= line_height
+        c.setFont(content_font, 11)
+        c.drawString(0.3 * inch, y, "Extra Nutella")
+        y -= line_height * 1.5
+    
+    # Add notes if present
+    if order['notes'] and order['notes'].strip():
+        c.setFont(title_font, 12)
+        c.drawString(0.2 * inch, y, "SPECIAL NOTES:")
+        y -= line_height
+        c.setFont(content_font, 11)
+        
+        # Handle long notes by wrapping text
+        notes = order['notes']
+        max_chars_per_line = 45
+        if len(notes) > max_chars_per_line:
+            words = notes.split(' ')
+            current_line = ""
+            for word in words:
+                if len(current_line + word) <= max_chars_per_line:
+                    current_line += word + " "
+                else:
+                    if current_line:
+                        c.drawString(0.3 * inch, y, current_line.strip())
+                        y -= line_height
+                    current_line = word + " "
+            if current_line:
+                c.drawString(0.3 * inch, y, current_line.strip())
+                y -= line_height
+        else:
+            c.drawString(0.3 * inch, y, notes)
+            y -= line_height
 
     c.showPage()
     c.save()
     buffer.seek(0)
 
-    return send_file(
+    response = make_response(send_file(
         buffer,
         as_attachment=False,
         mimetype='application/pdf',
         download_name=f'feteer_label_{order_id}.pdf'
-    )
+    ))
+    
+    # Add header to trigger auto-print
+    response.headers['X-Auto-Print'] = 'true'
+    return response
 
 # ---------- Menu Management Routes ----------
 @app.route('/update_menu_item/<int:item_id>', methods=['POST'])
@@ -533,6 +751,247 @@ def add_menu_item():
 def delete_menu_item(item_id):
     db = get_db()
     db.execute('DELETE FROM menu_config WHERE id = ?', (item_id,))
+    db.commit()
+    return redirect(request.referrer or url_for('index'))
+
+# ---------- Meat Types Management Routes ----------
+@app.route('/update_meat_type/<int:item_id>', methods=['POST'])
+@login_required
+@require_valid_id
+def update_meat_type(item_id):
+    name = request.form.get('name')
+    name_arabic = request.form.get('name_arabic')
+    price = request.form.get('price')
+    is_default = request.form.get('is_default') == 'on'
+    
+    # Validate name
+    is_valid, sanitized_name, error = InputValidator.validate_menu_item(name)
+    if not is_valid:
+        flash(f"Invalid meat name: {error}")
+        return redirect(request.referrer or url_for('index'))
+    
+    # Validate Arabic name
+    sanitized_name_arabic = InputValidator.sanitize_string(name_arabic, 100) if name_arabic else None
+    
+    # Validate price if provided
+    validated_price = 0
+    if price and price.strip():
+        is_valid, validated_price, error = InputValidator.validate_price(price)
+        if not is_valid:
+            flash(f"Invalid price: {error}")
+            return redirect(request.referrer or url_for('index'))
+    
+    db = get_db()
+    db.execute(
+        'UPDATE meat_types SET name = ?, name_arabic = ?, price = ?, is_default = ? WHERE id = ?',
+        (sanitized_name, sanitized_name_arabic, validated_price, is_default, item_id)
+    )
+    db.commit()
+    return redirect(request.referrer or url_for('index'))
+
+@app.route('/add_meat_type', methods=['POST'])
+@login_required
+def add_meat_type():
+    name = request.form.get('name')
+    name_arabic = request.form.get('name_arabic')
+    price = request.form.get('price')
+    is_default = request.form.get('is_default') == 'on'
+    
+    # Validate name
+    is_valid, sanitized_name, error = InputValidator.validate_menu_item(name)
+    if not is_valid:
+        flash(f"Invalid meat name: {error}")
+        return redirect(request.referrer or url_for('index'))
+    
+    # Validate Arabic name
+    sanitized_name_arabic = InputValidator.sanitize_string(name_arabic, 100) if name_arabic else None
+    
+    # Validate price if provided
+    validated_price = 0
+    if price and price.strip():
+        is_valid, validated_price, error = InputValidator.validate_price(price)
+        if not is_valid:
+            flash(f"Invalid price: {error}")
+            return redirect(request.referrer or url_for('index'))
+    
+    db = get_db()
+    db.execute(
+        'INSERT INTO meat_types (name, name_arabic, price, is_default, created_at) VALUES (?, ?, ?, ?, datetime("now"))',
+        (sanitized_name, sanitized_name_arabic, validated_price, is_default)
+    )
+    db.commit()
+    return redirect(request.referrer or url_for('index'))
+
+@app.route('/delete_meat_type/<int:item_id>', methods=['POST'])
+@login_required
+@require_valid_id
+def delete_meat_type(item_id):
+    db = get_db()
+    db.execute('DELETE FROM meat_types WHERE id = ?', (item_id,))
+    db.commit()
+    return redirect(request.referrer or url_for('index'))
+
+# ---------- Cheese Types Management Routes ----------
+@app.route('/update_cheese_type/<int:item_id>', methods=['POST'])
+@login_required
+@require_valid_id
+def update_cheese_type(item_id):
+    name = request.form.get('name')
+    name_arabic = request.form.get('name_arabic')
+    price = request.form.get('price')
+    
+    # Validate name
+    is_valid, sanitized_name, error = InputValidator.validate_menu_item(name)
+    if not is_valid:
+        flash(f"Invalid cheese name: {error}")
+        return redirect(request.referrer or url_for('index'))
+    
+    # Validate Arabic name
+    sanitized_name_arabic = InputValidator.sanitize_string(name_arabic, 100) if name_arabic else None
+    
+    # Validate price if provided
+    validated_price = 0
+    if price and price.strip():
+        is_valid, validated_price, error = InputValidator.validate_price(price)
+        if not is_valid:
+            flash(f"Invalid price: {error}")
+            return redirect(request.referrer or url_for('index'))
+    
+    db = get_db()
+    db.execute(
+        'UPDATE cheese_types SET name = ?, name_arabic = ?, price = ? WHERE id = ?',
+        (sanitized_name, sanitized_name_arabic, validated_price, item_id)
+    )
+    db.commit()
+    return redirect(request.referrer or url_for('index'))
+
+@app.route('/add_cheese_type', methods=['POST'])
+@login_required
+def add_cheese_type():
+    name = request.form.get('name')
+    name_arabic = request.form.get('name_arabic')
+    price = request.form.get('price')
+    
+    # Validate name
+    is_valid, sanitized_name, error = InputValidator.validate_menu_item(name)
+    if not is_valid:
+        flash(f"Invalid cheese name: {error}")
+        return redirect(request.referrer or url_for('index'))
+    
+    # Validate Arabic name
+    sanitized_name_arabic = InputValidator.sanitize_string(name_arabic, 100) if name_arabic else None
+    
+    # Validate price if provided
+    validated_price = 0
+    if price and price.strip():
+        is_valid, validated_price, error = InputValidator.validate_price(price)
+        if not is_valid:
+            flash(f"Invalid price: {error}")
+            return redirect(request.referrer or url_for('index'))
+    
+    db = get_db()
+    db.execute(
+        'INSERT INTO cheese_types (name, name_arabic, price, created_at) VALUES (?, ?, ?, datetime("now"))',
+        (sanitized_name, sanitized_name_arabic, validated_price)
+    )
+    db.commit()
+    return redirect(request.referrer or url_for('index'))
+
+@app.route('/delete_cheese_type/<int:item_id>', methods=['POST'])
+@login_required
+@require_valid_id
+def delete_cheese_type(item_id):
+    db = get_db()
+    db.execute('DELETE FROM cheese_types WHERE id = ?', (item_id,))
+    db.commit()
+    return redirect(request.referrer or url_for('index'))
+
+# ---------- Extra Toppings Management Routes ----------
+@app.route('/update_extra_topping/<int:item_id>', methods=['POST'])
+@login_required
+@require_valid_id
+def update_extra_topping(item_id):
+    name = request.form.get('name')
+    name_arabic = request.form.get('name_arabic')
+    price = request.form.get('price')
+    feteer_type = request.form.get('feteer_type')
+    
+    # Validate name
+    is_valid, sanitized_name, error = InputValidator.validate_menu_item(name)
+    if not is_valid:
+        flash(f"Invalid topping name: {error}")
+        return redirect(request.referrer or url_for('index'))
+    
+    # Validate Arabic name
+    sanitized_name_arabic = InputValidator.sanitize_string(name_arabic, 100) if name_arabic else None
+    
+    # Validate feteer type
+    is_valid, _, error = InputValidator.validate_menu_item(feteer_type)
+    if not is_valid:
+        flash(f"Invalid feteer type: {error}")
+        return redirect(request.referrer or url_for('index'))
+    
+    # Validate price if provided
+    validated_price = 0
+    if price and price.strip():
+        is_valid, validated_price, error = InputValidator.validate_price(price)
+        if not is_valid:
+            flash(f"Invalid price: {error}")
+            return redirect(request.referrer or url_for('index'))
+    
+    db = get_db()
+    db.execute(
+        'UPDATE extra_toppings SET name = ?, name_arabic = ?, price = ?, feteer_type = ? WHERE id = ?',
+        (sanitized_name, sanitized_name_arabic, validated_price, feteer_type, item_id)
+    )
+    db.commit()
+    return redirect(request.referrer or url_for('index'))
+
+@app.route('/add_extra_topping', methods=['POST'])
+@login_required
+def add_extra_topping():
+    name = request.form.get('name')
+    name_arabic = request.form.get('name_arabic')
+    price = request.form.get('price')
+    feteer_type = request.form.get('feteer_type')
+    
+    # Validate name
+    is_valid, sanitized_name, error = InputValidator.validate_menu_item(name)
+    if not is_valid:
+        flash(f"Invalid topping name: {error}")
+        return redirect(request.referrer or url_for('index'))
+    
+    # Validate Arabic name
+    sanitized_name_arabic = InputValidator.sanitize_string(name_arabic, 100) if name_arabic else None
+    
+    # Validate feteer type
+    is_valid, _, error = InputValidator.validate_menu_item(feteer_type)
+    if not is_valid:
+        flash(f"Invalid feteer type: {error}")
+        return redirect(request.referrer or url_for('index'))
+    
+    # Validate price if provided
+    validated_price = 0
+    if price and price.strip():
+        is_valid, validated_price, error = InputValidator.validate_price(price)
+        if not is_valid:
+            flash(f"Invalid price: {error}")
+            return redirect(request.referrer or url_for('index'))
+    
+    db = get_db()
+    db.execute(
+        'INSERT INTO extra_toppings (name, name_arabic, price, feteer_type, created_at) VALUES (?, ?, ?, ?, datetime("now"))',
+        (sanitized_name, sanitized_name_arabic, validated_price, feteer_type)
+    )
+    db.commit()
+    return redirect(request.referrer or url_for('index'))
+
+@app.route('/delete_extra_topping/<int:item_id>', methods=['POST'])
+@login_required
+@require_valid_id
+def delete_extra_topping(item_id):
+    db = get_db()
+    db.execute('DELETE FROM extra_toppings WHERE id = ?', (item_id,))
     db.commit()
     return redirect(request.referrer or url_for('index'))
 

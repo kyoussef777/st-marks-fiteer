@@ -2,15 +2,15 @@
 version: '3.8'
 
 services:
-  hebrews-coffee:
-    container_name: hebrews-coffee-prod
+  feteer:
+    container_name: feteer-prod
     build: 
       context: .
       dockerfile: Dockerfile.prod
     ports:
       - "3000:5000"
     volumes:
-      - hebrews_data:/app/data
+      - feteer_data:/app/data
       - ./logs:/app/logs
     restart: unless-stopped
     environment:
@@ -31,26 +31,26 @@ services:
         max-size: "10m"
         max-file: "3"
     networks:
-      - hebrews-network
+      - feteer-network
 
   nginx:
     image: nginx:alpine
-    container_name: hebrews-nginx
+    container_name: feteer-nginx
     ports:
       - "3001:80"
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
       - ./ssl:/etc/nginx/ssl:ro
     depends_on:
-      - hebrews-coffee
+      - feteer
     restart: unless-stopped
     networks:
-      - hebrews-network
+      - feteer-network
 
 volumes:
-  hebrews_data:
+  feteer_data:
     driver: local
 
 networks:
-  hebrews-network:
+  feteer-network:
     driver: bridge

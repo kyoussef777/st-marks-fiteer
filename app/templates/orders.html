@@ -1,148 +1,168 @@
 {% extends "base.html" %}
 
-{% block head %}
-<style>
-.status-checkboxes {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-}
-
-.status-checkboxes .form-check {
-    margin-bottom: 0;
-}
-
-.status-checkboxes .form-check-label {
-    font-size: 0.875rem;
-    margin-left: 0.25rem;
-}
-
-.status-checkboxes .form-check-input:checked {
-    background-color: #0d6efd;
-    border-color: #0d6efd;
-}
-
-.status-checkboxes .form-check-input:focus {
-    border-color: #86b7fe;
-    outline: 0;
-    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
-}
-
-@media (max-width: 768px) {
-    .status-checkboxes {
-        flex-direction: column;
-        gap: 0.25rem;
-    }
-}
-</style>
-{% endblock %}
-
 {% block content %}
-<div class="container-fluid mt-3">
-    <!-- Search and Filter Controls -->
-    <div class="row mb-3">
-        <div class="col-12 col-md-6 mb-2 mb-md-0">
-            <form method="GET" class="d-flex">
-                <input type="text" name="search" class="form-control me-2" placeholder="Search orders..." value="{{ search }}">
-                <button type="submit" class="btn btn-outline-primary btn-sm">
-                    <span class="d-none d-sm-inline">Search</span>
-                    <span class="d-sm-none">🔍</span>
-                </button>
-            </form>
-        </div>
-        <div class="col-12 col-md-6">
+<div class="orders-page">
+    <!-- Filter Controls Container -->
+    <div class="orders-filter-container">
+        <div class="orders-filter-section">
+            <div class="row">
+                <div class="col-12 col-md-6 mb-3 mb-md-0">
+                    <form method="GET" class="d-flex gap-2">
+                        <div class="orders-search-wrapper flex-grow-1">
+                            <div class="orders-search-icon">🔍</div>
+                            <input type="text" name="search" class="orders-search-input" 
+                                   placeholder="Search orders..." value="{{ search }}">
+                        </div>
+                        <button type="submit" class="orders-search-btn">
+                            <span class="d-none d-sm-inline">Search</span>
+                            <span class="d-sm-none">🔍</span>
+                        </button>
+                    </form>
+                </div>
+                <div class="col-12 col-md-6">
+                        <div class="orders-filter-container">
+        <div class="orders-filter-section-compact">
             <form method="GET" id="statusFilterForm">
                 <input type="hidden" name="search" value="{{ search }}">
-                <div class="d-flex align-items-center">
-                    <div class="status-checkboxes me-3">
-                        <div class="form-check form-check-inline">
-                            <input class="form-check-input" type="checkbox" name="status" value="all" id="status_all" 
+                <div class="d-flex align-items-center justify-content-center gap-3 flex-wrap">
+                    <div class="orders-status-filters-compact">
+                        <div class="orders-filter-check-compact">
+                            <input type="checkbox" name="status" value="all" id="status_all" 
                                    {% if 'all' in status_filters %}checked{% endif %} onchange="updateStatusFilter()">
-                            <label class="form-check-label" for="status_all">All</label>
+                            <label class="orders-filter-label-compact" for="status_all">All</label>
                         </div>
-                        <div class="form-check form-check-inline">
-                            <input class="form-check-input" type="checkbox" name="status" value="pending" id="status_pending" 
+                        <div class="orders-filter-check-compact">
+                            <input type="checkbox" name="status" value="pending" id="status_pending" 
                                    {% if 'pending' in status_filters %}checked{% endif %} onchange="updateStatusFilter()">
-                            <label class="form-check-label" for="status_pending">Pending</label>
+                            <label class="orders-filter-label-compact" for="status_pending">Pending</label>
                         </div>
-                        <div class="form-check form-check-inline">
-                            <input class="form-check-input" type="checkbox" name="status" value="in_progress" id="status_in_progress" 
+                        <div class="orders-filter-check-compact">
+                            <input type="checkbox" name="status" value="in_progress" id="status_in_progress" 
                                    {% if 'in_progress' in status_filters %}checked{% endif %} onchange="updateStatusFilter()">
-                            <label class="form-check-label" for="status_in_progress">In Progress</label>
+                            <label class="orders-filter-label-compact" for="status_in_progress">In Progress</label>
                         </div>
-                        <div class="form-check form-check-inline">
-                            <input class="form-check-input" type="checkbox" name="status" value="completed" id="status_completed" 
+                        <div class="orders-filter-check-compact">
+                            <input type="checkbox" name="status" value="completed" id="status_completed" 
                                    {% if 'completed' in status_filters %}checked{% endif %} onchange="updateStatusFilter()">
-                            <label class="form-check-label" for="status_completed">Completed</label>
+                            <label class="orders-filter-label-compact" for="status_completed">Completed</label>
                         </div>
                     </div>
-                    <button type="submit" class="btn btn-outline-primary btn-sm">Apply</button>
+                    <button type="submit" class="orders-apply-btn-compact">Apply Filters</button>
                 </div>
             </form>
         </div>
     </div>
+                </div>
+            </div>
+        </div>
+    </div>
     
-    <div class="table-responsive">
-        <table class="table table-hover">
-            <thead>
-                <tr>
-                    <th>#</th>
-                    <th>Customer | العميل</th>
-                    <th>Feteer Type | نوع الفطير</th>
-                    <th>Wait Time</th>
-                    <th>Notes | ملاحظات</th>
-                    <th>Status | الحالة</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for order in orders %}
-                <tr class="order-row {{ order.status }}">
-                    <td>{{ order.id }}</td>
-                    <td>{{ order.customer_name }}</td>
-                    <td>
-                        {{ order.feteer_type }}
-                        {% if order.item_name_arabic %}
-                            <br><small class="text-muted">{{ order.item_name_arabic }}</small>
-                        {% endif %}
-                    </td>
-                    <td>
-                        {% if order.wait_time_minutes > 0 %}
-                            <span class="{% if order.wait_time_minutes > 10 %}text-danger{% elif order.wait_time_minutes > 5 %}text-warning{% else %}text-muted{% endif %}">
-                                {{ "%.0f"|format(order.wait_time_minutes) }}m
-                            </span>
-                        {% else %}
-                            <span class="text-muted">-</span>
-                        {% endif %}
-                    </td>
-                    <td>{{ order.notes or '' }}</td>
-                    <td>
-                        <span class="status-badge {{ order.status }}">
-                            {{ order.status|title }}
-                        </span>
-                    </td>
-                    <td class="actions">
-                        {% if order.status == 'pending' %}
-                        <button class="btn btn-sm btn-primary" onclick="updateStatus('{{ order.id }}', 'in_progress')">
-                            Start
-                        </button>
-                        {% endif %}
-                        {% if order.status == 'in_progress' %}
-                        <button class="btn btn-sm btn-success" onclick="updateStatus('{{ order.id }}', 'completed')">
-                            Complete
-                        </button>
-                        {% endif %}
-                        <button class="btn btn-sm btn-info" onclick="createLabel('{{ order.id }}')">
-                            Print
-                        </button>
-                        <button class="btn btn-sm btn-danger" onclick="deleteOrder('{{ order.id }}')">
-                            Delete
-                        </button>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <!-- Table Container -->
+    <div class="orders-table-container">
+        <div class="orders-table-section">
+            <div class="table-responsive">
+                <table class="orders-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Customer | <span class="orders-arabic-text">العميل</span></th>
+                            <th>Feteer Details | <span class="orders-arabic-text">تفاصيل الفطير</span></th>
+                            <th>Wait Time</th>
+                            <th>Notes | <span class="orders-arabic-text">ملاحظات</span></th>
+                            <th>Status | <span class="orders-arabic-text">الحالة</span></th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in orders %}
+                        <tr>
+                            <td><strong>#{{ order.id }}</strong></td>
+                            <td><strong>{{ order.customer_name }}</strong></td>
+                            <td>
+                                <div class="orders-feteer-details">
+                                    <div class="orders-feteer-title">{{ order.feteer_type }}</div>
+                                    {% if order.item_name_arabic %}
+                                        <div class="orders-feteer-arabic"><span class="orders-arabic-text">{{ order.item_name_arabic }}</span></div>
+                                    {% endif %}
+                                    
+                                    <!-- Show meat selection for Mixed Meat orders -->
+                                    {% if order.feteer_type == 'Mixed Meat' and order.meat_selection %}
+                                        <div class="orders-addon-section">
+                                            <div class="orders-addon-title">
+                                                🥩 Meats | <span class="orders-arabic-text">اللحوم</span>
+                                            </div>
+                                            <div class="orders-addon-content">
+                                                {{ order.meat_selection.replace(',', ', ') }}
+                                                <br>
+                                                {% if order.has_cheese %}
+                                                    <strong style="color: var(--success-color);">✓ With Cheese | <span class="orders-arabic-text">مع الجبنة</span></strong>
+                                                {% else %}
+                                                    <strong style="color: var(--danger-color);">✗ No Cheese | <span class="orders-arabic-text">بدون جبنة</span></strong>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    {% endif %}
+                                    
+                                    <!-- Show extra toppings -->
+                                    {% if order.extra_nutella %}
+                                        <div class="orders-topping-section">
+                                            <div class="orders-topping-title">
+                                                🍯 Extra Nutella | <span class="orders-arabic-text">نوتيلا إضافية</span>
+                                            </div>
+                                            <div class="orders-addon-content">
+                                                Additional topping (+$2.00)
+                                            </div>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                {% if order.wait_time_minutes > 0 %}
+                                    <span class="orders-wait-time {% if order.wait_time_minutes > 10 %}danger{% elif order.wait_time_minutes > 5 %}warning{% else %}muted{% endif %}">
+                                        {{ "%.0f"|format(order.wait_time_minutes) }}m
+                                    </span>
+                                {% else %}
+                                    <span class="orders-wait-time muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if order.notes %}
+                                    <div class="orders-notes">{{ order.notes }}</div>
+                                {% else %}
+                                    <span style="color: var(--text-muted);">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="orders-status-badge {{ order.status }}">
+                                    {{ order.status|title }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="orders-actions">
+                                    {% if order.status == 'pending' %}
+                                    <button class="orders-action-btn primary" onclick="updateStatus('{{ order.id }}', 'in_progress')">
+                                        ▶ Start
+                                    </button>
+                                    {% endif %}
+                                    {% if order.status == 'in_progress' %}
+                                    <button class="orders-action-btn success" onclick="updateStatus('{{ order.id }}', 'completed')">
+                                        ✓ Complete
+                                    </button>
+                                    {% endif %}
+                                    <button class="orders-action-btn info" onclick="createLabel('{{ order.id }}')">
+                                        🖨 Print
+                                    </button>
+                                    <button class="orders-action-btn danger" onclick="deleteOrder('{{ order.id }}')">
+                                        🗑 Delete
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}
@@ -212,7 +232,15 @@ function updateStatus(orderId, newStatus) {
 }
 
 function createLabel(orderId) {
-    window.open('/create_label/' + orderId, '_blank');
+    // Open the PDF in a new window
+    const printWindow = window.open('/create_label/' + orderId, '_blank');
+    
+    // Wait for the PDF to load, then trigger print
+    printWindow.onload = function() {
+        setTimeout(function() {
+            printWindow.print();
+        }, 1000); // Wait 1 second for PDF to fully render
+    };
 }
 
 function deleteOrder(orderId) {
